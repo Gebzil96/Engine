@@ -24,14 +24,30 @@ def main():
     # 5. Создаём ModernGL контекст
     ctx = moderngl.create_context()
 
+    # 🔧 МОЖНО МЕНЯТЬ
+    TARGET_FPS = 120
+    target_frame_time = 1.0 / TARGET_FPS
+
+    last_time = time.perf_counter()
+
     # 6. Главный цикл
     while not glfw.window_should_close(window):
+        frame_start = time.perf_counter()
+        dt = frame_start - last_time
+        last_time = frame_start
         glfw.poll_events()
 
         # Чистим экран тёмным цветом
         ctx.clear(0.05, 0.05, 0.08, 1.0)
 
         glfw.swap_buffers(window)
+
+        frame_end = time.perf_counter()
+        frame_time = frame_end - frame_start
+        sleep_time = target_frame_time - frame_time
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+
 
     glfw.terminate()
 
