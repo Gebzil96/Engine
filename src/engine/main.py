@@ -1,6 +1,8 @@
 import glfw
 import moderngl
 import time
+from pathlib import Path
+from array import array
 
 def main():
     # 1. Инициализация GLFW
@@ -25,6 +27,39 @@ def main():
     # 5. Создаём ModernGL контекст
     ctx = moderngl.create_context()
 
+    # --- Resize -> viewport ---
+    def _on_framebuffer_resize(_window, width: int, height: int) -> None:
+        # GLFW может прислать (0,0) при сворачивании — защитимся от некорректного viewport
+        if width <= 0 or height <= 0:
+            return
+        ctx.viewport = (0, 0, width, height)
+
+    # Важно: используем framebuffer size, а не window size (учёт HiDPI)
+    glfw.set_framebuffer_size_callback(window, _on_framebuffer_resize)
+
+    # Инициализируем viewport один раз сразу (на случай HiDPI, чтобы не ждать первого resize)
+    fb_w, fb_h = glfw.get_framebuffer_size(window)
+    if fb_w > 0 and fb_h > 0:
+        ctx.viewport = (0, 0, fb_w, fb_h)
+    
+    # --- Simple draw: triangle ---
+    # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
+    project_root = Path(__file__).resolve().parents[2]
+    shader_dir = project_root / "assets" / "shaders"
+    vert_src = (shader_dir / "basic.vert").read_text(encoding="utf-8")
+    frag_src = (shader_dir / "basic.frag").read_text(encoding="utf-8")
+
+    prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
+
+    # Треугольник в NDC (-1..1), 2D позиции (x, y)
+    vertices = array('f', [
+        -0.6, -0.4,
+         0.6, -0.4,
+         0.0,  0.6,
+    ])
+    vbo = ctx.buffer(vertices.tobytes())
+    vao = ctx.simple_vertex_array(prog, vbo, "in_pos")
+
     # 🔧 МОЖНО МЕНЯТЬ
     TARGET_FPS = 120
     target_frame_time = 1.0 / TARGET_FPS
@@ -44,8 +79,13 @@ def main():
 
         glfw.poll_events()
 
+        # Закрытие по Esc
+        if glfw.get_key(window, glfw.KEY_ESCAPE) == glfw.PRESS:
+            glfw.set_window_should_close(window, True)
+
         # Чистим экран тёмным цветом
         ctx.clear(0.05, 0.05, 0.08, 1.0)
+        vao.render(mode=moderngl.TRIANGLES)
 
         glfw.swap_buffers(window)
 
