@@ -48,7 +48,6 @@ def main():
         if sleep_time > 0:
             time.sleep(sleep_time)
 
-
     glfw.terminate()
 
 
