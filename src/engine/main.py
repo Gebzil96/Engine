@@ -1,6 +1,6 @@
 import glfw
 import moderngl
-
+import time
 
 def main():
     # 1. Инициализация GLFW
