@@ -39,6 +39,38 @@ def mat4_translate(tx: float, ty: float, tz: float = 0.0):
     m[14] = tz
     return m
 
+def mat4_scale(sx: float, sy: float, sz: float = 1.0):
+    m = mat4_identity()
+    m[0] = sx
+    m[5] = sy
+    m[10] = sz
+    return m
+
+
+def mat4_rotate_z(angle_radians: float):
+    c = math.cos(angle_radians)
+    s = math.sin(angle_radians)
+    return [
+        c,   s,   0.0, 0.0,
+        -s,  c,   0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    ]
+
+
+def mat4_mul(a, b):
+    # Column-major 4x4: out = a * b
+    out = [0.0] * 16
+    for col in range(4):
+        for row in range(4):
+            out[col * 4 + row] = (
+                a[0 * 4 + row] * b[col * 4 + 0] +
+                a[1 * 4 + row] * b[col * 4 + 1] +
+                a[2 * 4 + row] * b[col * 4 + 2] +
+                a[3 * 4 + row] * b[col * 4 + 3]
+            )
+    return out
+
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
     project_root = Path(__file__).resolve().parents[2]
@@ -155,6 +187,19 @@ def main():
         # 🔧 МОЖНО МЕНЯТЬ
         QUAD_MOVE_SPEED_PX_PER_SEC = 300.0
 
+        # 🔧 МОЖНО МЕНЯТЬ
+        quad_rot_rad = 0.0
+
+        # 🔧 МОЖНО МЕНЯТЬ
+        quad_scale_x = 1.0
+        quad_scale_y = 1.0
+
+        # 🔧 МОЖНО МЕНЯТЬ
+        QUAD_ROT_SPEED_RAD_PER_SEC = 2.5
+        QUAD_SCALE_SPEED_PER_SEC = 1.0
+        MIN_QUAD_SCALE = 0.1
+        MAX_QUAD_SCALE = 8.0
+
         quad_vertices = array('f', [
             -50.0, -50.0,
             50.0, -50.0,
@@ -220,6 +265,23 @@ def main():
 
                 quad_pos_x += move_x * QUAD_MOVE_SPEED_PX_PER_SEC * dt
                 quad_pos_y += move_y * QUAD_MOVE_SPEED_PX_PER_SEC * dt
+            
+            # --- Quad rotation (Q/E) ---
+            if glfw.get_key(window, glfw.KEY_Q) == glfw.PRESS:
+                quad_rot_rad += QUAD_ROT_SPEED_RAD_PER_SEC * dt
+            if glfw.get_key(window, glfw.KEY_E) == glfw.PRESS:
+                quad_rot_rad -= QUAD_ROT_SPEED_RAD_PER_SEC * dt
+
+            # --- Quad scale (Z/X) ---
+            if glfw.get_key(window, glfw.KEY_Z) == glfw.PRESS:
+                quad_scale_x -= QUAD_SCALE_SPEED_PER_SEC * dt
+                quad_scale_y -= QUAD_SCALE_SPEED_PER_SEC * dt
+            if glfw.get_key(window, glfw.KEY_X) == glfw.PRESS:
+                quad_scale_x += QUAD_SCALE_SPEED_PER_SEC * dt
+                quad_scale_y += QUAD_SCALE_SPEED_PER_SEC * dt
+
+            quad_scale_x = max(MIN_QUAD_SCALE, min(MAX_QUAD_SCALE, quad_scale_x))
+            quad_scale_y = max(MIN_QUAD_SCALE, min(MAX_QUAD_SCALE, quad_scale_y))
 
             # Закрытие по Esc
             if glfw.get_key(window, glfw.KEY_ESCAPE) == glfw.PRESS:
@@ -249,7 +311,11 @@ def main():
                 1.0,
             )
             u_proj.write(array('f', projection).tobytes())
-            model = mat4_translate(quad_pos_x, quad_pos_y, 0.0)
+            t = mat4_translate(quad_pos_x, quad_pos_y, 0.0)
+            r = mat4_rotate_z(quad_rot_rad)
+            s = mat4_scale(quad_scale_x, quad_scale_y, 1.0)
+
+            model = mat4_mul(t, mat4_mul(r, s))
             u_model.write(array('f', model).tobytes())
 
             vao.render()
