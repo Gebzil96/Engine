@@ -75,6 +75,26 @@ def mat4_mul(a, b):
             )
     return out
 
+def build_view_proj(fb_w: int, fb_h: int, cam_x: float, cam_y: float):
+    projection = ortho(
+        -fb_w / 2,
+        fb_w / 2,
+        -fb_h / 2,
+        fb_h / 2,
+        -1.0,
+        1.0,
+    )
+
+    view = mat4_translate_inv(cam_x, cam_y, 0.0)
+    return mat4_mul(projection, view)
+
+
+def build_model(pos_x: float, pos_y: float, rot_rad: float, scale_x: float, scale_y: float):
+    t = mat4_translate(pos_x, pos_y, 0.0)
+    r = mat4_rotate_z(rot_rad)
+    s = mat4_scale(scale_x, scale_y, 1.0)
+    return mat4_mul(t, mat4_mul(r, s))
+
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
     project_root = Path(__file__).resolve().parents[2]
@@ -335,24 +355,11 @@ def main():
             if was_minimized:
                 logging.info("Window restored -> rendering resumed (framebuffer %s x %s)", fb_w, fb_h)
                 was_minimized = False
-            projection = ortho(
-                -fb_w / 2,
-                fb_w / 2,
-                -fb_h / 2,
-                fb_h / 2,
-                -1.0,
-                1.0,
-            )
 
-            view = mat4_translate_inv(cam_pos_x, cam_pos_y, 0.0)
-            view_proj = mat4_mul(projection, view)
-
+            view_proj = build_view_proj(fb_w, fb_h, cam_pos_x, cam_pos_y)
             u_view_proj.write(array('f', view_proj).tobytes())
-            t = mat4_translate(quad_pos_x, quad_pos_y, 0.0)
-            r = mat4_rotate_z(quad_rot_rad)
-            s = mat4_scale(quad_scale_x, quad_scale_y, 1.0)
 
-            model = mat4_mul(t, mat4_mul(r, s))
+            model = build_model(quad_pos_x, quad_pos_y, quad_rot_rad, quad_scale_x, quad_scale_y)
             u_model.write(array('f', model).tobytes())
 
             vao.render()
