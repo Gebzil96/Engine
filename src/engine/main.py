@@ -180,7 +180,7 @@ def main():
         logging.info("Shaders loaded OK")
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
-        u_proj = prog["u_proj"]
+        u_view_proj = prog["u_view_proj"]
         u_model = prog["u_model"]
 
         # --- Simple draw: quad ---
@@ -283,13 +283,13 @@ def main():
             cam_move_y = 0.0
 
             if glfw.get_key(window, glfw.KEY_LEFT) == glfw.PRESS:
-                cam_move_x -= 1.0
-            if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
                 cam_move_x += 1.0
+            if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
+                cam_move_x -= 1.0
             if glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS:
-                cam_move_y += 1.0
-            if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
                 cam_move_y -= 1.0
+            if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
+                cam_move_y += 1.0
 
             if cam_move_x != 0.0 or cam_move_y != 0.0:
                 length = math.sqrt(cam_move_x * cam_move_x + cam_move_y * cam_move_y)
@@ -347,7 +347,7 @@ def main():
             view = mat4_translate_inv(cam_pos_x, cam_pos_y, 0.0)
             view_proj = mat4_mul(projection, view)
 
-            u_proj.write(array('f', view_proj).tobytes())
+            u_view_proj.write(array('f', view_proj).tobytes())
             t = mat4_translate(quad_pos_x, quad_pos_y, 0.0)
             r = mat4_rotate_z(quad_rot_rad)
             s = mat4_scale(quad_scale_x, quad_scale_y, 1.0)
