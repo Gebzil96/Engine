@@ -232,6 +232,24 @@ def main():
         # 🔧 МОЖНО МЕНЯТЬ
         CAM_MOVE_SPEED_PX_PER_SEC = 400.0
 
+        # --- Scene objects (temporary, before ECS) ---
+        scene_objects = [
+            {
+                "pos_x": 0.0,
+                "pos_y": 0.0,
+                "rot": 0.0,
+                "scale_x": 1.0,
+                "scale_y": 1.0,
+            },
+            {
+                "pos_x": 300.0,
+                "pos_y": 0.0,
+                "rot": 0.0,
+                "scale_x": 1.0,
+                "scale_y": 1.0,
+            },
+        ]
+
         quad_vertices = array('f', [
             -50.0, -50.0,
             50.0, -50.0,
@@ -303,13 +321,13 @@ def main():
             cam_move_y = 0.0
 
             if glfw.get_key(window, glfw.KEY_LEFT) == glfw.PRESS:
-                cam_move_x += 1.0
-            if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
                 cam_move_x -= 1.0
+            if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
+                cam_move_x += 1.0
             if glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS:
-                cam_move_y -= 1.0
-            if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
                 cam_move_y += 1.0
+            if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
+                cam_move_y -= 1.0
 
             if cam_move_x != 0.0 or cam_move_y != 0.0:
                 length = math.sqrt(cam_move_x * cam_move_x + cam_move_y * cam_move_y)
@@ -336,6 +354,13 @@ def main():
             quad_scale_x = max(MIN_QUAD_SCALE, min(MAX_QUAD_SCALE, quad_scale_x))
             quad_scale_y = max(MIN_QUAD_SCALE, min(MAX_QUAD_SCALE, quad_scale_y))
 
+            # Apply controlled transform to the first scene object
+            scene_objects[0]["pos_x"] = quad_pos_x
+            scene_objects[0]["pos_y"] = quad_pos_y
+            scene_objects[0]["rot"] = quad_rot_rad
+            scene_objects[0]["scale_x"] = quad_scale_x
+            scene_objects[0]["scale_y"] = quad_scale_y
+
             # Закрытие по Esc
             if glfw.get_key(window, glfw.KEY_ESCAPE) == glfw.PRESS:
                 logging.info("Event: ESC pressed -> close window")
@@ -359,10 +384,17 @@ def main():
             view_proj = build_view_proj(fb_w, fb_h, cam_pos_x, cam_pos_y)
             u_view_proj.write(array('f', view_proj).tobytes())
 
-            model = build_model(quad_pos_x, quad_pos_y, quad_rot_rad, quad_scale_x, quad_scale_y)
-            u_model.write(array('f', model).tobytes())
+            for obj in scene_objects:
+                model = build_model(
+                    obj["pos_x"],
+                    obj["pos_y"],
+                    obj["rot"],
+                    obj["scale_x"],
+                    obj["scale_y"],
+                )
+                u_model.write(array('f', model).tobytes())
+                vao.render()
 
-            vao.render()
             glfw.swap_buffers(window)
 
             if fps_timer >= 1.0:
