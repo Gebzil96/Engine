@@ -39,6 +39,10 @@ def mat4_translate(tx: float, ty: float, tz: float = 0.0):
     m[14] = tz
     return m
 
+def mat4_translate_inv(tx: float, ty: float, tz: float = 0.0):
+    # Inverse for pure translation is translation by negative values
+    return mat4_translate(-tx, -ty, -tz)
+
 def mat4_scale(sx: float, sy: float, sz: float = 1.0):
     m = mat4_identity()
     m[0] = sx
@@ -200,6 +204,14 @@ def main():
         MIN_QUAD_SCALE = 0.1
         MAX_QUAD_SCALE = 8.0
 
+        # --- Camera (view) ---
+        # 🔧 МОЖНО МЕНЯТЬ
+        cam_pos_x = 0.0
+        cam_pos_y = 0.0
+
+        # 🔧 МОЖНО МЕНЯТЬ
+        CAM_MOVE_SPEED_PX_PER_SEC = 400.0
+
         quad_vertices = array('f', [
             -50.0, -50.0,
             50.0, -50.0,
@@ -266,6 +278,27 @@ def main():
                 quad_pos_x += move_x * QUAD_MOVE_SPEED_PX_PER_SEC * dt
                 quad_pos_y += move_y * QUAD_MOVE_SPEED_PX_PER_SEC * dt
             
+            # --- Camera movement (Arrow keys) ---
+            cam_move_x = 0.0
+            cam_move_y = 0.0
+
+            if glfw.get_key(window, glfw.KEY_LEFT) == glfw.PRESS:
+                cam_move_x -= 1.0
+            if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
+                cam_move_x += 1.0
+            if glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS:
+                cam_move_y += 1.0
+            if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
+                cam_move_y -= 1.0
+
+            if cam_move_x != 0.0 or cam_move_y != 0.0:
+                length = math.sqrt(cam_move_x * cam_move_x + cam_move_y * cam_move_y)
+                cam_move_x /= length
+                cam_move_y /= length
+
+                cam_pos_x += cam_move_x * CAM_MOVE_SPEED_PX_PER_SEC * dt
+                cam_pos_y += cam_move_y * CAM_MOVE_SPEED_PX_PER_SEC * dt
+
             # --- Quad rotation (Q/E) ---
             if glfw.get_key(window, glfw.KEY_Q) == glfw.PRESS:
                 quad_rot_rad += QUAD_ROT_SPEED_RAD_PER_SEC * dt
@@ -310,7 +343,11 @@ def main():
                 -1.0,
                 1.0,
             )
-            u_proj.write(array('f', projection).tobytes())
+
+            view = mat4_translate_inv(cam_pos_x, cam_pos_y, 0.0)
+            view_proj = mat4_mul(projection, view)
+
+            u_proj.write(array('f', view_proj).tobytes())
             t = mat4_translate(quad_pos_x, quad_pos_y, 0.0)
             r = mat4_rotate_z(quad_rot_rad)
             s = mat4_scale(quad_scale_x, quad_scale_y, 1.0)
