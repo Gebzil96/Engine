@@ -149,8 +149,11 @@ def main():
 
         # --- Simple draw: quad ---
         # 🔧 МОЖНО МЕНЯТЬ
-        QUAD_POS_X = 0
-        QUAD_POS_Y = 0
+        quad_pos_x = 0.0
+        quad_pos_y = 0.0
+
+        # 🔧 МОЖНО МЕНЯТЬ
+        QUAD_MOVE_SPEED_PX_PER_SEC = 300.0
 
         quad_vertices = array('f', [
             -50.0, -50.0,
@@ -197,6 +200,27 @@ def main():
 
             glfw.poll_events()
 
+            # --- Quad movement (WASD) ---
+            move_x = 0.0
+            move_y = 0.0
+
+            if glfw.get_key(window, glfw.KEY_A) == glfw.PRESS:
+                move_x -= 1.0
+            if glfw.get_key(window, glfw.KEY_D) == glfw.PRESS:
+                move_x += 1.0
+            if glfw.get_key(window, glfw.KEY_W) == glfw.PRESS:
+                move_y += 1.0
+            if glfw.get_key(window, glfw.KEY_S) == glfw.PRESS:
+                move_y -= 1.0
+
+            if move_x != 0.0 or move_y != 0.0:
+                length = math.sqrt(move_x * move_x + move_y * move_y)
+                move_x /= length
+                move_y /= length
+
+                quad_pos_x += move_x * QUAD_MOVE_SPEED_PX_PER_SEC * dt
+                quad_pos_y += move_y * QUAD_MOVE_SPEED_PX_PER_SEC * dt
+
             # Закрытие по Esc
             if glfw.get_key(window, glfw.KEY_ESCAPE) == glfw.PRESS:
                 logging.info("Event: ESC pressed -> close window")
@@ -225,7 +249,7 @@ def main():
                 1.0,
             )
             u_proj.write(array('f', projection).tobytes())
-            model = mat4_translate(QUAD_POS_X, QUAD_POS_Y, 0.0)
+            model = mat4_translate(quad_pos_x, quad_pos_y, 0.0)
             u_model.write(array('f', model).tobytes())
 
             vao.render()
