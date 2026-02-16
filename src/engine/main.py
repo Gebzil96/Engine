@@ -137,10 +137,14 @@ class World:
 
         # --- ECS bridge (temporary): mirror scene_objects into ECS ---
         self.scene_entities: list[int] = []
+        # Первый объект сцены считаем управляемым
+        self.player_entity = None
 
         for obj in self.scene_objects:
             e = self.registry.create_entity()
             self.scene_entities.append(e)
+            if self.player_entity is None:
+                self.player_entity = e
 
             self.registry.add(
                 e,
@@ -183,8 +187,9 @@ def input_system(
         move_x /= length
         move_y /= length
 
-        world.scene_objects[0]["pos_x"] += move_x * quad_move_speed * dt
-        world.scene_objects[0]["pos_y"] += move_y * quad_move_speed * dt
+        transform = world.registry.get(world.player_entity, Transform)
+        transform.pos_x += move_x * quad_move_speed * dt
+        transform.pos_y += move_y * quad_move_speed * dt
 
     # --- Camera movement (Arrow keys) ---
     cam_move_x = 0.0
@@ -208,27 +213,31 @@ def input_system(
         world.cam_pos_y += cam_move_y * cam_move_speed * dt
 
     # --- Quad rotation (Q/E) ---
+    transform = world.registry.get(world.player_entity, Transform)
+
     if glfw.get_key(window, glfw.KEY_Q) == glfw.PRESS:
-        world.scene_objects[0]["rot"] += quad_rot_speed * dt
+        transform.rot += quad_rot_speed * dt
     if glfw.get_key(window, glfw.KEY_E) == glfw.PRESS:
-        world.scene_objects[0]["rot"] -= quad_rot_speed * dt
+        transform.rot -= quad_rot_speed * dt
 
     # --- Quad scale (Z/X) ---
-    if glfw.get_key(window, glfw.KEY_Z) == glfw.PRESS:
-        world.scene_objects[0]["scale_x"] -= quad_scale_speed * dt
-        world.scene_objects[0]["scale_y"] -= quad_scale_speed * dt
-    if glfw.get_key(window, glfw.KEY_X) == glfw.PRESS:
-        world.scene_objects[0]["scale_x"] += quad_scale_speed * dt
-        world.scene_objects[0]["scale_y"] += quad_scale_speed * dt
+    transform = world.registry.get(world.player_entity, Transform)
 
-    world.scene_objects[0]["scale_x"] = max(
+    if glfw.get_key(window, glfw.KEY_Z) == glfw.PRESS:
+        transform.scale_x -= quad_scale_speed * dt
+        transform.scale_y -= quad_scale_speed * dt
+    if glfw.get_key(window, glfw.KEY_X) == glfw.PRESS:
+        transform.scale_x += quad_scale_speed * dt
+        transform.scale_y += quad_scale_speed * dt
+
+    transform.scale_x = max(
         min_quad_scale,
-        min(max_quad_scale, world.scene_objects[0]["scale_x"]),
+        min(max_quad_scale, transform.scale_x),
     )
 
-    world.scene_objects[0]["scale_y"] = max(
+    transform.scale_y = max(
         min_quad_scale,
-        min(max_quad_scale, world.scene_objects[0]["scale_y"]),
+        min(max_quad_scale, transform.scale_y),
     )
 
 def render_system(
@@ -451,6 +460,14 @@ def main():
             if was_minimized:
                 logging.info("Window restored -> rendering resumed (framebuffer %s x %s)", fb_w, fb_h)
                 was_minimized = False
+            
+            # --- Temporary sync: ECS -> scene_objects ---
+            transform = world.registry.get(world.player_entity, Transform)
+            world.scene_objects[0]["pos_x"] = transform.pos_x
+            world.scene_objects[0]["pos_y"] = transform.pos_y
+            world.scene_objects[0]["rot"] = transform.rot
+            world.scene_objects[0]["scale_x"] = transform.scale_x
+            world.scene_objects[0]["scale_y"] = transform.scale_y
 
             render_system(world, fb_w, fb_h, vao, u_view_proj, u_model)
 
