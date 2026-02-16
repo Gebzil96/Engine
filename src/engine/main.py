@@ -12,12 +12,14 @@ import sys
 try:
     # Обычный запуск через run_engine.pyw: from src.engine.main import main
     from src.engine.ecs.registry import Registry
+    from src.engine.ecs.components.transform import Transform
 except ModuleNotFoundError:
     # На всякий случай: если main.py запустили напрямую, добавим корень проекта в sys.path
     project_root = Path(__file__).resolve().parents[2]
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     from src.engine.ecs.registry import Registry
+    from src.engine.ecs.components.transform import Transform
 
 EMERGENCY_LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "run.log"
 EMERGENCY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -132,6 +134,24 @@ class World:
                 "scale_y": 1.0,
             },
         ]
+
+        # --- ECS bridge (temporary): mirror scene_objects into ECS ---
+        self.scene_entities: list[int] = []
+
+        for obj in self.scene_objects:
+            e = self.registry.create_entity()
+            self.scene_entities.append(e)
+
+            self.registry.add(
+                e,
+                Transform(
+                    pos_x=obj["pos_x"],
+                    pos_y=obj["pos_y"],
+                    rot=obj["rot"],
+                    scale_x=obj["scale_x"],
+                    scale_y=obj["scale_y"],
+                ),
+            )
 
 def input_system(
     world: World,
