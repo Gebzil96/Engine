@@ -22,6 +22,22 @@ def ortho(left, right, bottom, top, near, far):
         1.0,
     ]
 
+def mat4_identity():
+    return [
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    ]
+
+
+def mat4_translate(tx: float, ty: float, tz: float = 0.0):
+    m = mat4_identity()
+    # Column-major: translation is in indices 12..14 (same style as ortho() above)
+    m[12] = tx
+    m[13] = ty
+    m[14] = tz
+    return m
 
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
@@ -129,8 +145,13 @@ def main():
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_proj = prog["u_proj"]
+        u_model = prog["u_model"]
 
         # --- Simple draw: quad ---
+        # 🔧 МОЖНО МЕНЯТЬ
+        QUAD_POS_X = 0
+        QUAD_POS_Y = 0
+
         quad_vertices = array('f', [
             -50.0, -50.0,
             50.0, -50.0,
@@ -204,6 +225,8 @@ def main():
                 1.0,
             )
             u_proj.write(array('f', projection).tobytes())
+            model = mat4_translate(QUAD_POS_X, QUAD_POS_Y, 0.0)
+            u_model.write(array('f', model).tobytes())
 
             vao.render()
             glfw.swap_buffers(window)
