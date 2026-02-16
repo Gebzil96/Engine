@@ -95,6 +95,130 @@ def build_model(pos_x: float, pos_y: float, rot_rad: float, scale_x: float, scal
     s = mat4_scale(scale_x, scale_y, 1.0)
     return mat4_mul(t, mat4_mul(r, s))
 
+class World:
+    def __init__(self):
+        # --- Camera ---
+        self.cam_pos_x = 0.0
+        self.cam_pos_y = 0.0
+
+        # --- Scene objects (temporary, before ECS) ---
+        self.scene_objects = [
+            {
+                "pos_x": 0.0,
+                "pos_y": 0.0,
+                "rot": 0.0,
+                "scale_x": 1.0,
+                "scale_y": 1.0,
+            },
+            {
+                "pos_x": 300.0,
+                "pos_y": 0.0,
+                "rot": 0.0,
+                "scale_x": 1.0,
+                "scale_y": 1.0,
+            },
+        ]
+
+def input_system(
+    world: World,
+    window,
+    dt: float,
+    quad_move_speed: float,
+    cam_move_speed: float,
+    quad_rot_speed: float,
+    quad_scale_speed: float,
+    min_quad_scale: float,
+    max_quad_scale: float,
+) -> None:
+    
+    # --- Quad movement (WASD) ---
+    move_x = 0.0
+    move_y = 0.0
+
+    if glfw.get_key(window, glfw.KEY_A) == glfw.PRESS:
+        move_x -= 1.0
+    if glfw.get_key(window, glfw.KEY_D) == glfw.PRESS:
+        move_x += 1.0
+    if glfw.get_key(window, glfw.KEY_W) == glfw.PRESS:
+        move_y += 1.0
+    if glfw.get_key(window, glfw.KEY_S) == glfw.PRESS:
+        move_y -= 1.0
+
+    if move_x != 0.0 or move_y != 0.0:
+        length = math.sqrt(move_x * move_x + move_y * move_y)
+        move_x /= length
+        move_y /= length
+
+        world.scene_objects[0]["pos_x"] += move_x * quad_move_speed * dt
+        world.scene_objects[0]["pos_y"] += move_y * quad_move_speed * dt
+
+    # --- Camera movement (Arrow keys) ---
+    cam_move_x = 0.0
+    cam_move_y = 0.0
+
+    if glfw.get_key(window, glfw.KEY_LEFT) == glfw.PRESS:
+        cam_move_x -= 1.0
+    if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
+        cam_move_x += 1.0
+    if glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS:
+        cam_move_y += 1.0
+    if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
+        cam_move_y -= 1.0
+
+    if cam_move_x != 0.0 or cam_move_y != 0.0:
+        length = math.sqrt(cam_move_x * cam_move_x + cam_move_y * cam_move_y)
+        cam_move_x /= length
+        cam_move_y /= length
+
+        world.cam_pos_x += cam_move_x * cam_move_speed * dt
+        world.cam_pos_y += cam_move_y * cam_move_speed * dt
+
+    # --- Quad rotation (Q/E) ---
+    if glfw.get_key(window, glfw.KEY_Q) == glfw.PRESS:
+        world.scene_objects[0]["rot"] += quad_rot_speed * dt
+    if glfw.get_key(window, glfw.KEY_E) == glfw.PRESS:
+        world.scene_objects[0]["rot"] -= quad_rot_speed * dt
+
+    # --- Quad scale (Z/X) ---
+    if glfw.get_key(window, glfw.KEY_Z) == glfw.PRESS:
+        world.scene_objects[0]["scale_x"] -= quad_scale_speed * dt
+        world.scene_objects[0]["scale_y"] -= quad_scale_speed * dt
+    if glfw.get_key(window, glfw.KEY_X) == glfw.PRESS:
+        world.scene_objects[0]["scale_x"] += quad_scale_speed * dt
+        world.scene_objects[0]["scale_y"] += quad_scale_speed * dt
+
+    world.scene_objects[0]["scale_x"] = max(
+        min_quad_scale,
+        min(max_quad_scale, world.scene_objects[0]["scale_x"]),
+    )
+
+    world.scene_objects[0]["scale_y"] = max(
+        min_quad_scale,
+        min(max_quad_scale, world.scene_objects[0]["scale_y"]),
+    )
+
+def render_system(
+    world: World,
+    fb_w: int,
+    fb_h: int,
+    vao,
+    u_view_proj,
+    u_model,
+) -> None:
+    view_proj = build_view_proj(fb_w, fb_h, world.cam_pos_x, world.cam_pos_y)
+    u_view_proj.write(array('f', view_proj).tobytes())
+
+    for obj in world.scene_objects:
+        model = build_model(
+            obj["pos_x"],
+            obj["pos_y"],
+            obj["rot"],
+            obj["scale_x"],
+            obj["scale_y"],
+        )
+        u_model.write(array('f', model).tobytes())
+        vao.render()
+
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
     project_root = Path(__file__).resolve().parents[2]
@@ -122,7 +246,7 @@ def setup_logging() -> Path:
     return log_path
 
 
-def main():
+def main():    
     try:
         setup_logging()
         engine_start_time = time.perf_counter()
@@ -149,6 +273,7 @@ def main():
 
         # 5. Создаём ModernGL контекст
         ctx = moderngl.create_context()
+        world = World()
 
         logging.info("OpenGL version: %s", ctx.info["GL_VERSION"])
         logging.info("GPU: %s", ctx.info["GL_RENDERER"])
@@ -203,20 +328,8 @@ def main():
         u_view_proj = prog["u_view_proj"]
         u_model = prog["u_model"]
 
-        # --- Simple draw: quad ---
-        # 🔧 МОЖНО МЕНЯТЬ
-        quad_pos_x = 0.0
-        quad_pos_y = 0.0
-
         # 🔧 МОЖНО МЕНЯТЬ
         QUAD_MOVE_SPEED_PX_PER_SEC = 300.0
-
-        # 🔧 МОЖНО МЕНЯТЬ
-        quad_rot_rad = 0.0
-
-        # 🔧 МОЖНО МЕНЯТЬ
-        quad_scale_x = 1.0
-        quad_scale_y = 1.0
 
         # 🔧 МОЖНО МЕНЯТЬ
         QUAD_ROT_SPEED_RAD_PER_SEC = 2.5
@@ -226,29 +339,7 @@ def main():
 
         # --- Camera (view) ---
         # 🔧 МОЖНО МЕНЯТЬ
-        cam_pos_x = 0.0
-        cam_pos_y = 0.0
-
-        # 🔧 МОЖНО МЕНЯТЬ
         CAM_MOVE_SPEED_PX_PER_SEC = 400.0
-
-        # --- Scene objects (temporary, before ECS) ---
-        scene_objects = [
-            {
-                "pos_x": 0.0,
-                "pos_y": 0.0,
-                "rot": 0.0,
-                "scale_x": 1.0,
-                "scale_y": 1.0,
-            },
-            {
-                "pos_x": 300.0,
-                "pos_y": 0.0,
-                "rot": 0.0,
-                "scale_x": 1.0,
-                "scale_y": 1.0,
-            },
-        ]
 
         quad_vertices = array('f', [
             -50.0, -50.0,
@@ -295,71 +386,17 @@ def main():
 
             glfw.poll_events()
 
-            # --- Quad movement (WASD) ---
-            move_x = 0.0
-            move_y = 0.0
-
-            if glfw.get_key(window, glfw.KEY_A) == glfw.PRESS:
-                move_x -= 1.0
-            if glfw.get_key(window, glfw.KEY_D) == glfw.PRESS:
-                move_x += 1.0
-            if glfw.get_key(window, glfw.KEY_W) == glfw.PRESS:
-                move_y += 1.0
-            if glfw.get_key(window, glfw.KEY_S) == glfw.PRESS:
-                move_y -= 1.0
-
-            if move_x != 0.0 or move_y != 0.0:
-                length = math.sqrt(move_x * move_x + move_y * move_y)
-                move_x /= length
-                move_y /= length
-
-                quad_pos_x += move_x * QUAD_MOVE_SPEED_PX_PER_SEC * dt
-                quad_pos_y += move_y * QUAD_MOVE_SPEED_PX_PER_SEC * dt
-            
-            # --- Camera movement (Arrow keys) ---
-            cam_move_x = 0.0
-            cam_move_y = 0.0
-
-            if glfw.get_key(window, glfw.KEY_LEFT) == glfw.PRESS:
-                cam_move_x -= 1.0
-            if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
-                cam_move_x += 1.0
-            if glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS:
-                cam_move_y += 1.0
-            if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
-                cam_move_y -= 1.0
-
-            if cam_move_x != 0.0 or cam_move_y != 0.0:
-                length = math.sqrt(cam_move_x * cam_move_x + cam_move_y * cam_move_y)
-                cam_move_x /= length
-                cam_move_y /= length
-
-                cam_pos_x += cam_move_x * CAM_MOVE_SPEED_PX_PER_SEC * dt
-                cam_pos_y += cam_move_y * CAM_MOVE_SPEED_PX_PER_SEC * dt
-
-            # --- Quad rotation (Q/E) ---
-            if glfw.get_key(window, glfw.KEY_Q) == glfw.PRESS:
-                quad_rot_rad += QUAD_ROT_SPEED_RAD_PER_SEC * dt
-            if glfw.get_key(window, glfw.KEY_E) == glfw.PRESS:
-                quad_rot_rad -= QUAD_ROT_SPEED_RAD_PER_SEC * dt
-
-            # --- Quad scale (Z/X) ---
-            if glfw.get_key(window, glfw.KEY_Z) == glfw.PRESS:
-                quad_scale_x -= QUAD_SCALE_SPEED_PER_SEC * dt
-                quad_scale_y -= QUAD_SCALE_SPEED_PER_SEC * dt
-            if glfw.get_key(window, glfw.KEY_X) == glfw.PRESS:
-                quad_scale_x += QUAD_SCALE_SPEED_PER_SEC * dt
-                quad_scale_y += QUAD_SCALE_SPEED_PER_SEC * dt
-
-            quad_scale_x = max(MIN_QUAD_SCALE, min(MAX_QUAD_SCALE, quad_scale_x))
-            quad_scale_y = max(MIN_QUAD_SCALE, min(MAX_QUAD_SCALE, quad_scale_y))
-
-            # Apply controlled transform to the first scene object
-            scene_objects[0]["pos_x"] = quad_pos_x
-            scene_objects[0]["pos_y"] = quad_pos_y
-            scene_objects[0]["rot"] = quad_rot_rad
-            scene_objects[0]["scale_x"] = quad_scale_x
-            scene_objects[0]["scale_y"] = quad_scale_y
+            input_system(
+                world,
+                window,
+                dt,
+                QUAD_MOVE_SPEED_PX_PER_SEC,
+                CAM_MOVE_SPEED_PX_PER_SEC,
+                QUAD_ROT_SPEED_RAD_PER_SEC,
+                QUAD_SCALE_SPEED_PER_SEC,
+                MIN_QUAD_SCALE,
+                MAX_QUAD_SCALE,
+            )
 
             # Закрытие по Esc
             if glfw.get_key(window, glfw.KEY_ESCAPE) == glfw.PRESS:
@@ -381,19 +418,7 @@ def main():
                 logging.info("Window restored -> rendering resumed (framebuffer %s x %s)", fb_w, fb_h)
                 was_minimized = False
 
-            view_proj = build_view_proj(fb_w, fb_h, cam_pos_x, cam_pos_y)
-            u_view_proj.write(array('f', view_proj).tobytes())
-
-            for obj in scene_objects:
-                model = build_model(
-                    obj["pos_x"],
-                    obj["pos_y"],
-                    obj["rot"],
-                    obj["scale_x"],
-                    obj["scale_y"],
-                )
-                u_model.write(array('f', model).tobytes())
-                vao.render()
+            render_system(world, fb_w, fb_h, vao, u_view_proj, u_model)
 
             glfw.swap_buffers(window)
 
