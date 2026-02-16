@@ -8,6 +8,17 @@ import logging
 from datetime import datetime
 import sys
 
+# --- ECS (Entity + Component Registry) ---
+try:
+    # Обычный запуск через run_engine.pyw: from src.engine.main import main
+    from src.engine.ecs.registry import Registry
+except ModuleNotFoundError:
+    # На всякий случай: если main.py запустили напрямую, добавим корень проекта в sys.path
+    project_root = Path(__file__).resolve().parents[2]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    from src.engine.ecs.registry import Registry
+
 EMERGENCY_LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "run.log"
 EMERGENCY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -100,6 +111,9 @@ class World:
         # --- Camera ---
         self.cam_pos_x = 0.0
         self.cam_pos_y = 0.0
+
+        # --- ECS core ---
+        self.registry = Registry()
 
         # --- Scene objects (temporary, before ECS) ---
         self.scene_objects = [
