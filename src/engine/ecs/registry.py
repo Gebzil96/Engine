@@ -40,3 +40,9 @@ class Registry:
         bucket.pop(entity, None)
         if not bucket:
             self._components.pop(component_type, None)
+    
+    def get_all(self, component_type: Type[T]) -> Dict[EntityId, T]:
+        bucket = self._components.get(component_type)
+        if bucket is None:
+            return {}
+        return bucket

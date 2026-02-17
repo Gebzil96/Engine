@@ -117,45 +117,37 @@ class World:
         # --- ECS core ---
         self.registry = Registry()
 
-        # --- Scene objects (temporary, before ECS) ---
-        self.scene_objects = [
-            {
-                "pos_x": 0.0,
-                "pos_y": 0.0,
-                "rot": 0.0,
-                "scale_x": 1.0,
-                "scale_y": 1.0,
-            },
-            {
-                "pos_x": 300.0,
-                "pos_y": 0.0,
-                "rot": 0.0,
-                "scale_x": 1.0,
-                "scale_y": 1.0,
-            },
-        ]
-
-        # --- ECS bridge (temporary): mirror scene_objects into ECS ---
+        # --- ECS scene bootstrap ---
         self.scene_entities: list[int] = []
-        # Первый объект сцены считаем управляемым
-        self.player_entity = None
 
-        for obj in self.scene_objects:
-            e = self.registry.create_entity()
-            self.scene_entities.append(e)
-            if self.player_entity is None:
-                self.player_entity = e
+        # Entity 1: player (управляемый)
+        player = self.registry.create_entity()
+        self.player_entity = player
+        self.scene_entities.append(player)
+        self.registry.add(
+            player,
+            Transform(
+                pos_x=0.0,
+                pos_y=0.0,
+                rot=0.0,
+                scale_x=1.0,
+                scale_y=1.0,
+            ),
+        )
 
-            self.registry.add(
-                e,
-                Transform(
-                    pos_x=obj["pos_x"],
-                    pos_y=obj["pos_y"],
-                    rot=obj["rot"],
-                    scale_x=obj["scale_x"],
-                    scale_y=obj["scale_y"],
-                ),
-            )
+        # Entity 2: static quad (пример второго объекта)
+        e2 = self.registry.create_entity()
+        self.scene_entities.append(e2)
+        self.registry.add(
+            e2,
+            Transform(
+                pos_x=300.0,
+                pos_y=0.0,
+                rot=0.0,
+                scale_x=1.0,
+                scale_y=1.0,
+            ),
+        )
 
 def input_system(
     world: World,
@@ -251,14 +243,17 @@ def render_system(
     view_proj = build_view_proj(fb_w, fb_h, world.cam_pos_x, world.cam_pos_y)
     u_view_proj.write(array('f', view_proj).tobytes())
 
-    for obj in world.scene_objects:
+    transforms = world.registry.get_all(Transform)
+
+    for _eid, tr in transforms.items():
         model = build_model(
-            obj["pos_x"],
-            obj["pos_y"],
-            obj["rot"],
-            obj["scale_x"],
-            obj["scale_y"],
+            tr.pos_x,
+            tr.pos_y,
+            tr.rot,
+            tr.scale_x,
+            tr.scale_y,
         )
+
         u_model.write(array('f', model).tobytes())
         vao.render()
 
@@ -461,14 +456,6 @@ def main():
                 logging.info("Window restored -> rendering resumed (framebuffer %s x %s)", fb_w, fb_h)
                 was_minimized = False
             
-            # --- Temporary sync: ECS -> scene_objects ---
-            transform = world.registry.get(world.player_entity, Transform)
-            world.scene_objects[0]["pos_x"] = transform.pos_x
-            world.scene_objects[0]["pos_y"] = transform.pos_y
-            world.scene_objects[0]["rot"] = transform.rot
-            world.scene_objects[0]["scale_x"] = transform.scale_x
-            world.scene_objects[0]["scale_y"] = transform.scale_y
-
             render_system(world, fb_w, fb_h, vao, u_view_proj, u_model)
 
             glfw.swap_buffers(window)
