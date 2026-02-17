@@ -209,10 +209,16 @@ def main():
         tex0 = load_texture_rgba(ctx, texture_path)
         tex0.use(location=0)
         logging.info("Texture loaded OK: %s", texture_path.name)
-        
+
+        texture_path2 = project_root / "assets" / "textures" / "test2.png"
+        logging.info("Texture2 path: %s", texture_path2)
+
+        tex1 = load_texture_rgba(ctx, texture_path2)
+        logging.info("Texture2 loaded OK: %s", texture_path2.name)
+
         # --- ECS: прикрепляем текстуру к сущностям через Sprite ---
         world.registry.add(world.player_entity, Sprite(texture=tex0))
-        world.registry.add(world.e2_entity, Sprite(texture=tex0))
+        world.registry.add(world.e2_entity, Sprite(texture=tex1))
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]
