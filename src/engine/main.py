@@ -13,6 +13,7 @@ except ModuleNotFoundError:
 import sys
 from src.engine.systems.types import FrameContext
 from src.engine.systems.make_systems import make_systems
+from src.engine.resources.texture_manager import TextureManager
 
 # --- ECS (Entity + Component Registry) ---
 try:
@@ -153,6 +154,7 @@ def main():
         # 5. Создаём ModernGL контекст
         ctx = moderngl.create_context()
         world = World()
+        texture_manager = TextureManager(ctx)
 
         logging.info("OpenGL version: %s", ctx.info["GL_VERSION"])
         logging.info("GPU: %s", ctx.info["GL_RENDERER"])
@@ -206,14 +208,13 @@ def main():
         texture_path = project_root / "assets" / "textures" / "test.png"
         logging.info("Texture path: %s", texture_path)
 
-        tex0 = load_texture_rgba(ctx, texture_path)
-        tex0.use(location=0)
+        tex0 = texture_manager.get(texture_path)
         logging.info("Texture loaded OK: %s", texture_path.name)
 
         texture_path2 = project_root / "assets" / "textures" / "test2.png"
         logging.info("Texture2 path: %s", texture_path2)
 
-        tex1 = load_texture_rgba(ctx, texture_path2)
+        tex1 = texture_manager.get(texture_path2)
         logging.info("Texture2 loaded OK: %s", texture_path2.name)
 
         # --- ECS: прикрепляем текстуру к сущностям через Sprite ---
