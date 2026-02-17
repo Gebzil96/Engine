@@ -20,6 +20,7 @@ try:
     from src.engine.ecs.registry import Registry
     from src.engine.ecs.components.transform import Transform
     from src.engine.ecs.components.renderable import Renderable
+    from src.engine.ecs.components.sprite import Sprite
 except ModuleNotFoundError:
     # На всякий случай: если main.py запустили напрямую, добавим корень проекта в sys.path
     project_root = Path(__file__).resolve().parents[2]
@@ -28,6 +29,7 @@ except ModuleNotFoundError:
     from src.engine.ecs.registry import Registry
     from src.engine.ecs.components.transform import Transform
     from src.engine.ecs.components.renderable import Renderable
+    from src.engine.ecs.components.sprite import Sprite
 
 EMERGENCY_LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "run.log"
 EMERGENCY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -66,6 +68,7 @@ class World:
         # Entity 2: static quad (пример второго объекта)
         e2 = self.registry.create_entity()
         self.scene_entities.append(e2)
+        self.e2_entity = e2
         self.registry.add(
             e2,
             Transform(
@@ -206,6 +209,10 @@ def main():
         tex0 = load_texture_rgba(ctx, texture_path)
         tex0.use(location=0)
         logging.info("Texture loaded OK: %s", texture_path.name)
+        
+        # --- ECS: прикрепляем текстуру к сущностям через Sprite ---
+        world.registry.add(world.player_entity, Sprite(texture=tex0))
+        world.registry.add(world.e2_entity, Sprite(texture=tex0))
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]
