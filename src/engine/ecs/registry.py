@@ -46,3 +46,37 @@ class Registry:
         if bucket is None:
             return {}
         return bucket
+    
+    def query(self, *component_types: Type[Any]) -> list[EntityId]:
+        """
+        Вернуть список entity_id, у которых есть ВСЕ указанные компоненты.
+        Пример: registry.query(Transform, Renderable)
+        """
+        if not component_types:
+            return []
+
+        # Берём бакеты компонентов
+        buckets: list[Dict[EntityId, Any]] = []
+        for ct in component_types:
+            bucket = self._components.get(ct)
+            if not bucket:
+                return []
+            buckets.append(bucket)
+
+        # Идём по самому маленькому бакету (быстрее)
+        buckets.sort(key=len)
+        base = buckets[0]
+        others = buckets[1:]
+
+        result: list[EntityId] = []
+        for eid in base.keys():
+            ok = True
+            for b in others:
+                if eid not in b:
+                    ok = False
+                    break
+            if ok:
+                result.append(eid)
+
+        return result
+    

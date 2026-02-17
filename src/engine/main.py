@@ -13,6 +13,7 @@ try:
     # Обычный запуск через run_engine.pyw: from src.engine.main import main
     from src.engine.ecs.registry import Registry
     from src.engine.ecs.components.transform import Transform
+    from src.engine.ecs.components.renderable import Renderable
 except ModuleNotFoundError:
     # На всякий случай: если main.py запустили напрямую, добавим корень проекта в sys.path
     project_root = Path(__file__).resolve().parents[2]
@@ -20,6 +21,7 @@ except ModuleNotFoundError:
         sys.path.insert(0, str(project_root))
     from src.engine.ecs.registry import Registry
     from src.engine.ecs.components.transform import Transform
+    from src.engine.ecs.components.renderable import Renderable
 
 EMERGENCY_LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "run.log"
 EMERGENCY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -53,6 +55,8 @@ class World:
             ),
         )
 
+        self.registry.add(player, Renderable(z_index=0))
+
         # Entity 2: static quad (пример второго объекта)
         e2 = self.registry.create_entity()
         self.scene_entities.append(e2)
@@ -67,6 +71,7 @@ class World:
             ),
         )
 
+        self.registry.add(e2, Renderable(z_index=1))
 
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]

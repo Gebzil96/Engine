@@ -1,6 +1,7 @@
 from array import array
 
 from src.engine.ecs.components.transform import Transform
+from src.engine.ecs.components.renderable import Renderable
 from src.engine.render_math import build_model, build_view_proj
 
 from .types import FrameContext
@@ -17,9 +18,14 @@ def render_system(
     view_proj = build_view_proj(fb_w, fb_h, world.cam_pos_x, world.cam_pos_y)
     u_view_proj.write(array("f", view_proj).tobytes())
 
-    transforms = world.registry.get_all(Transform)
+    entity_ids = world.registry.query(Transform, Renderable)
 
-    for _eid, tr in transforms.items():
+    # z_index: меньше рисуем раньше (пока одинаковые квадраты — визуально без разницы,
+    # но это база на будущее)
+    entity_ids.sort(key=lambda eid: world.registry.get(eid, Renderable).z_index)
+
+    for eid in entity_ids:
+        tr = world.registry.get(eid, Transform)
         model = build_model(
             tr.pos_x,
             tr.pos_y,
