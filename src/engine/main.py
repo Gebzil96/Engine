@@ -4,6 +4,12 @@ import time
 from pathlib import Path
 from array import array
 import logging
+
+try:
+    from PIL import Image
+except ModuleNotFoundError:
+    Image = None
+
 import sys
 from src.engine.systems.types import FrameContext
 from src.engine.systems.make_systems import make_systems
@@ -99,6 +105,22 @@ def setup_logging() -> Path:
 
     return log_path
 
+def load_texture_rgba(ctx, path: Path):
+    if Image is None:
+        raise ModuleNotFoundError(
+            "Pillow не установлен. Установи: pip install pillow"
+        )
+
+    img = Image.open(path).convert("RGBA")
+    # OpenGL ожидает начало координат снизу-слева, PNG обычно сверху-слева
+    img = img.transpose(Image.FLIP_TOP_BOTTOM)
+
+    tex = ctx.texture(img.size, 4, img.tobytes())
+    tex.filter = (moderngl.NEAREST, moderngl.NEAREST)  # пиксельный стиль
+    tex.repeat_x = False
+    tex.repeat_y = False
+    return tex
+
 
 def main():    
     try:
@@ -178,9 +200,19 @@ def main():
 
         logging.info("Shaders loaded OK")
 
+        texture_path = project_root / "assets" / "textures" / "test.png"
+        logging.info("Texture path: %s", texture_path)
+
+        tex0 = load_texture_rgba(ctx, texture_path)
+        tex0.use(location=0)
+        logging.info("Texture loaded OK: %s", texture_path.name)
+
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]
         u_model = prog["u_model"]
+        u_tex = prog["u_tex"]
+        u_tex.value = 0  # texture unit 0
+
 
         # 🔧 МОЖНО МЕНЯТЬ
         QUAD_MOVE_SPEED_PX_PER_SEC = 300.0
@@ -195,11 +227,12 @@ def main():
         # 🔧 МОЖНО МЕНЯТЬ
         CAM_MOVE_SPEED_PX_PER_SEC = 400.0
 
-        quad_vertices = array('f', [
-            -50.0, -50.0,
-            50.0, -50.0,
-            50.0,  50.0,
-            -50.0,  50.0,
+        quad_vertices = array("f", [
+            # x, y,   u, v
+            -50.0, -50.0, 0.0, 0.0,
+            50.0, -50.0, 1.0, 0.0,
+            50.0,  50.0, 1.0, 1.0,
+            -50.0,  50.0, 0.0, 1.0,
         ])
 
         quad_indices = array('I', [
@@ -211,9 +244,7 @@ def main():
         ibo = ctx.buffer(quad_indices.tobytes())
 
         vao = ctx.vertex_array(
-            prog,
-            [(vbo, "2f", "in_pos")],
-            index_buffer=ibo
+            prog, [(vbo, "2f 2f", "in_pos", "in_uv")], index_buffer=ibo
         )
 
         # 🔧 МОЖНО МЕНЯТЬ

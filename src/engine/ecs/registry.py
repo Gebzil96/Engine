@@ -49,6 +49,35 @@ class Registry:
     
     def query(self, *component_types: Type[Any]) -> list[EntityId]:
         """
+        Вернёт список EntityId, у которых есть ВСЕ компоненты из component_types.
+        Пример: registry.query(Transform, Renderable)
+        """
+        if not component_types:
+            return []
+
+        # Берём "самое маленькое" ведро, чтобы пересечение было быстрым
+        buckets: list[Dict[EntityId, Any]] = []
+        for ct in component_types:
+            b = self._components.get(ct)
+            if b is None or len(b) == 0:
+                return []
+            buckets.append(b)
+
+        buckets.sort(key=len)
+
+        # Стартуем с ключей самого маленького bucket
+        result = set(buckets[0].keys())
+        for b in buckets[1:]:
+            result.intersection_update(b.keys())
+            if not result:
+                return []
+
+        # Стабильный порядок (на будущее удобнее)
+        return sorted(result)
+    
+    
+    def query(self, *component_types: Type[Any]) -> list[EntityId]:
+        """
         Вернуть список entity_id, у которых есть ВСЕ указанные компоненты.
         Пример: registry.query(Transform, Renderable)
         """
