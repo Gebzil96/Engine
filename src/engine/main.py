@@ -22,7 +22,6 @@ try:
     from src.engine.ecs.registry import Registry
     from src.engine.ecs.components.transform import Transform
     from src.engine.ecs.components.renderable import Renderable
-    from src.engine.ecs.components.sprite import Sprite
 except ModuleNotFoundError:
     # На всякий случай: если main.py запустили напрямую, добавим корень проекта в sys.path
     project_root = Path(__file__).resolve().parents[2]
@@ -31,7 +30,6 @@ except ModuleNotFoundError:
     from src.engine.ecs.registry import Registry
     from src.engine.ecs.components.transform import Transform
     from src.engine.ecs.components.renderable import Renderable
-    from src.engine.ecs.components.sprite import Sprite
 
 EMERGENCY_LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "run.log"
 EMERGENCY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -49,7 +47,10 @@ class World:
 
         # --- Scene ---
         self.scene = Scene(self.registry)
-        self.player_entity, self.e2_entity = self.scene.spawn_example()
+
+        # Сущности спавним позже в main(), когда текстуры уже загружены
+        self.player_entity: int | None = None
+        self.e2_entity: int | None = None
 
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
@@ -185,9 +186,8 @@ def main():
         tex1 = texture_manager.get(texture_path2)
         logging.info("Texture2 loaded OK: %s", texture_path2.name)
 
-        # --- ECS: прикрепляем текстуру к сущностям через Sprite ---
-        world.registry.add(world.player_entity, Sprite(texture=tex0))
-        world.registry.add(world.e2_entity, Sprite(texture=tex1))
+        # --- Scene: спавним сущности теперь, когда текстуры уже загружены ---
+        world.player_entity, world.e2_entity = world.scene.spawn_example(tex0, tex1)
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]

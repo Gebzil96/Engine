@@ -49,7 +49,7 @@ class Scene:
 
         return eid    
 
-    def spawn_example(self):
+    def spawn_example(self, player_texture, e2_texture):
         player = self.spawn_prefab(
             {
                 "transform": {
@@ -60,6 +60,7 @@ class Scene:
                     "scale_y": 1.0,
                 },
                 "renderable": {"z_index": 0},
+                "sprite": {"texture": player_texture},
             }
         )
 
@@ -73,6 +74,7 @@ class Scene:
                     "scale_y": 1.0,
                 },
                 "renderable": {"z_index": 1},
+                "sprite": {"texture": e2_texture},
             }
         )
 
