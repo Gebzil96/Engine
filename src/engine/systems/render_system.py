@@ -2,6 +2,7 @@ from array import array
 
 from src.engine.ecs.components.renderable import Renderable
 from src.engine.ecs.components.transform import Transform
+from src.engine.ecs.components.sprite import Sprite
 from src.engine.render_math import build_model, build_view_proj
 
 from .types import FrameContext
@@ -18,14 +19,17 @@ def render_system(
     view_proj = build_view_proj(fb_w, fb_h, world.cam_pos_x, world.cam_pos_y)
     u_view_proj.write(array("f", view_proj).tobytes())
 
-    # Берём только сущности, у которых есть Transform + Renderable
-    entity_ids = world.registry.query(Transform, Renderable)
+    # Берём только сущности, у которых есть Transform + Renderable + Sprite
+    entity_ids = world.registry.query(Transform, Renderable, Sprite)
 
     # Сортируем по z_index
     entity_ids.sort(key=lambda eid: world.registry.get(eid, Renderable).z_index)
 
     for eid in entity_ids:
         tr = world.registry.get(eid, Transform)
+
+        sprite = world.registry.get(eid, Sprite)
+        sprite.texture.use(location=0)
 
         model = build_model(
             tr.pos_x,
