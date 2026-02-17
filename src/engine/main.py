@@ -7,6 +7,7 @@ import math
 import logging
 from datetime import datetime
 import sys
+from typing import Callable, Dict
 
 # --- ECS (Entity + Component Registry) ---
 try:
@@ -107,6 +108,56 @@ def build_model(pos_x: float, pos_y: float, rot_rad: float, scale_x: float, scal
     r = mat4_rotate_z(rot_rad)
     s = mat4_scale(scale_x, scale_y, 1.0)
     return mat4_mul(t, mat4_mul(r, s))
+
+# --- ECS Systems (update -> render) ---
+FrameContext = Dict[str, object]
+UpdateSystem = Callable[["World", FrameContext], None]
+RenderSystem = Callable[["World", FrameContext], None]
+
+
+def close_on_esc_system(world: "World", ctx: FrameContext) -> None:
+    window = ctx["window"]
+    # Закрытие по Esc (как система обновления)
+    if glfw.get_key(window, glfw.KEY_ESCAPE) == glfw.PRESS:
+        logging.info("Event: ESC pressed -> close window")
+        glfw.set_window_should_close(window, True)
+
+
+def make_systems(
+    quad_move_speed: float,
+    cam_move_speed: float,
+    quad_rot_speed: float,
+    quad_scale_speed: float,
+    min_quad_scale: float,
+    max_quad_scale: float,
+) -> tuple[list[UpdateSystem], list[RenderSystem]]:
+    update_systems: list[UpdateSystem] = [
+        lambda w, c: input_system(
+            w,
+            c["window"],
+            c["dt"],
+            quad_move_speed,
+            cam_move_speed,
+            quad_rot_speed,
+            quad_scale_speed,
+            min_quad_scale,
+            max_quad_scale,
+        ),
+        close_on_esc_system,
+    ]
+
+    render_systems: list[RenderSystem] = [
+        lambda w, c: render_system(
+            w,
+            c["fb_w"],
+            c["fb_h"],
+            c["vao"],
+            c["u_view_proj"],
+            c["u_model"],
+        )
+    ]
+
+    return update_systems, render_systems
 
 class World:
     def __init__(self):
@@ -405,6 +456,15 @@ def main():
         logging.info("Target FPS: %s", TARGET_FPS)
         target_frame_time = 1.0 / TARGET_FPS
 
+        update_systems, render_systems = make_systems(
+            QUAD_MOVE_SPEED_PX_PER_SEC,
+            CAM_MOVE_SPEED_PX_PER_SEC,
+            QUAD_ROT_SPEED_RAD_PER_SEC,
+            QUAD_SCALE_SPEED_PER_SEC,
+            MIN_QUAD_SCALE,
+            MAX_QUAD_SCALE,
+        )
+
         last_time = time.perf_counter()
 
         fps_timer = 0.0
@@ -424,22 +484,13 @@ def main():
 
             glfw.poll_events()
 
-            input_system(
-                world,
-                window,
-                dt,
-                QUAD_MOVE_SPEED_PX_PER_SEC,
-                CAM_MOVE_SPEED_PX_PER_SEC,
-                QUAD_ROT_SPEED_RAD_PER_SEC,
-                QUAD_SCALE_SPEED_PER_SEC,
-                MIN_QUAD_SCALE,
-                MAX_QUAD_SCALE,
-            )
+            frame_ctx: FrameContext = {
+                "window": window,
+                "dt": dt,
+            }
 
-            # Закрытие по Esc
-            if glfw.get_key(window, glfw.KEY_ESCAPE) == glfw.PRESS:
-                logging.info("Event: ESC pressed -> close window")
-                glfw.set_window_should_close(window, True)
+            for sys_update in update_systems:
+                sys_update(world, frame_ctx)
 
             # Чистим экран
             ctx.clear(0.05, 0.05, 0.08, 1.0)
@@ -456,7 +507,14 @@ def main():
                 logging.info("Window restored -> rendering resumed (framebuffer %s x %s)", fb_w, fb_h)
                 was_minimized = False
             
-            render_system(world, fb_w, fb_h, vao, u_view_proj, u_model)
+            frame_ctx["fb_w"] = fb_w
+            frame_ctx["fb_h"] = fb_h
+            frame_ctx["vao"] = vao
+            frame_ctx["u_view_proj"] = u_view_proj
+            frame_ctx["u_model"] = u_model
+
+            for sys_render in render_systems:
+                sys_render(world, frame_ctx)
 
             glfw.swap_buffers(window)
 
