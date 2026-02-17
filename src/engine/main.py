@@ -14,6 +14,7 @@ import sys
 from src.engine.systems.types import FrameContext
 from src.engine.systems.make_systems import make_systems
 from src.engine.resources.texture_manager import TextureManager
+from src.engine.scene import Scene
 
 # --- ECS (Entity + Component Registry) ---
 try:
@@ -46,42 +47,9 @@ class World:
         # --- ECS core ---
         self.registry = Registry()
 
-        # --- ECS scene bootstrap ---
-        self.scene_entities: list[int] = []
-
-        # Entity 1: player (управляемый)
-        player = self.registry.create_entity()
-        self.player_entity = player
-        self.scene_entities.append(player)
-        self.registry.add(
-            player,
-            Transform(
-                pos_x=0.0,
-                pos_y=0.0,
-                rot=0.0,
-                scale_x=1.0,
-                scale_y=1.0,
-            ),
-        )
-
-        self.registry.add(player, Renderable(z_index=0))
-
-        # Entity 2: static quad (пример второго объекта)
-        e2 = self.registry.create_entity()
-        self.scene_entities.append(e2)
-        self.e2_entity = e2
-        self.registry.add(
-            e2,
-            Transform(
-                pos_x=300.0,
-                pos_y=0.0,
-                rot=0.0,
-                scale_x=1.0,
-                scale_y=1.0,
-            ),
-        )
-
-        self.registry.add(e2, Renderable(z_index=1))
+        # --- Scene ---
+        self.scene = Scene(self.registry)
+        self.player_entity, self.e2_entity = self.scene.spawn_example()
 
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
