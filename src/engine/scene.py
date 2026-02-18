@@ -42,14 +42,14 @@ class Scene:
         # Sprite
         spr_data = data.get("sprite")
         if spr_data is not None:
-            tex = spr_data.get("texture")
-            if tex is None:
-                raise ValueError("Prefab sprite.texture is required")
-            self.registry.add(eid, Sprite(texture=tex))
+            tex_path = spr_data.get("texture_path")
+            if tex_path is None:
+                raise ValueError("Prefab sprite.texture_path is required")
+            self.registry.add(eid, Sprite(texture_path=tex_path))
 
         return eid    
 
-    def spawn_example(self, player_texture, e2_texture):
+    def spawn_example(self, player_texture_path, e2_texture_path):
         player = self.spawn_prefab(
             {
                 "transform": {
@@ -60,7 +60,7 @@ class Scene:
                     "scale_y": 1.0,
                 },
                 "renderable": {"z_index": 0},
-                "sprite": {"texture": player_texture},
+                "sprite": {"texture_path": player_texture_path},
             }
         )
 
@@ -74,7 +74,7 @@ class Scene:
                     "scale_y": 1.0,
                 },
                 "renderable": {"z_index": 1},
-                "sprite": {"texture": e2_texture},
+                "sprite": {"texture_path": e2_texture_path},
             }
         )
 

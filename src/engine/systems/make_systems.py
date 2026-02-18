@@ -35,6 +35,7 @@ def make_systems(
             c["vao"],
             c["u_view_proj"],
             c["u_model"],
+            c["texture_manager"],
         )
     ]
 

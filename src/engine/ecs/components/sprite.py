@@ -1,12 +1,11 @@
 from __future__ import annotations
 from dataclasses import dataclass
-import moderngl
-
+from pathlib import Path
 
 @dataclass(slots=True)
 class Sprite:
     """
     Компонент спрайта.
-    Хранит ссылку на текстуру ModernGL.
+    Хранит путь к текстуре (asset), а не сам объект ModernGL.
     """
-    texture: moderngl.Texture
+    texture_path: Path

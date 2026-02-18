@@ -187,7 +187,7 @@ def main():
         logging.info("Texture2 loaded OK: %s", texture_path2.name)
 
         # --- Scene: спавним сущности теперь, когда текстуры уже загружены ---
-        world.player_entity, world.e2_entity = world.scene.spawn_example(tex0, tex1)
+        world.player_entity, world.e2_entity = world.scene.spawn_example(texture_path, texture_path2)
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]
@@ -265,6 +265,7 @@ def main():
             frame_ctx: FrameContext = {
                 "window": window,
                 "dt": dt,
+                "texture_manager": texture_manager,
             }
 
             for sys_update in update_systems:
