@@ -358,6 +358,12 @@ def main():
                 world.scene_def.cleanup(world)
         except Exception:
             logging.exception("Scene cleanup failed")
+        finally:
+            try:
+                if "world" in locals():
+                    world.scene.clear()
+            except Exception:
+                logging.exception("Scene clear failed")
 
         logging.info("Engine shutdown")
         glfw.terminate()
