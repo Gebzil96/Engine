@@ -47,7 +47,13 @@ class Scene:
                 raise ValueError("Prefab sprite.texture_path is required")
             self.registry.add(eid, Sprite(texture_path=tex_path))
 
-        return eid    
+        return eid
+
+    def spawn_prefabs(self, prefabs: list[dict]) -> list[int]:
+        spawned: list[int] = []
+        for data in prefabs:
+            spawned.append(self.spawn_prefab(data))
+        return spawned  
 
     def spawn_example(self, player_texture_path, e2_texture_path):
         player = self.spawn_prefab(

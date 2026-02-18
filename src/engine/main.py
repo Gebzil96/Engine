@@ -15,6 +15,7 @@ from src.engine.systems.types import FrameContext
 from src.engine.systems.make_systems import make_systems
 from src.engine.resources.texture_manager import TextureManager
 from src.engine.scene import Scene
+from src.engine.scenes.example_scene import build_example_scene
 
 # --- ECS (Entity + Component Registry) ---
 try:
@@ -187,7 +188,11 @@ def main():
         logging.info("Texture2 loaded OK: %s", texture_path2.name)
 
         # --- Scene: спавним сущности теперь, когда текстуры уже загружены ---
-        world.player_entity, world.e2_entity = world.scene.spawn_example(texture_path, texture_path2)
+        prefabs = build_example_scene(texture_path, texture_path2)
+        spawned = world.scene.spawn_prefabs(prefabs)
+
+        world.player_entity = spawned[0] if len(spawned) > 0 else None
+        world.e2_entity = spawned[1] if len(spawned) > 1 else None
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]
