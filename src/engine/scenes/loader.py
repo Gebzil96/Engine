@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 
-SceneBuilder = Callable[..., list[dict]]
+SceneBuilder = Callable[[], list[dict]]
 
 
 def get_scene_builder(scene_id: str) -> SceneBuilder:

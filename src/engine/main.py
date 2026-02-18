@@ -192,7 +192,7 @@ def main():
         SCENE_ID = "example_scene"
 
         scene_builder = get_scene_builder(SCENE_ID)
-        prefabs = scene_builder(texture_path, texture_path2)
+        prefabs = scene_builder()
         spawned = world.scene.spawn_prefabs(prefabs)
 
         world.player_entity = spawned[0] if len(spawned) > 0 else None

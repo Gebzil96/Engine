@@ -18,7 +18,8 @@ class TextureManager:
         self.ctx = ctx
         self._textures: dict[Path, moderngl.Texture] = {}
 
-    def get(self, path: Path) -> moderngl.Texture:
+    def get(self, path: str | Path) -> moderngl.Texture:
+        path = Path(path)
         if path in self._textures:
             return self._textures[path]
 

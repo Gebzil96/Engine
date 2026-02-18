@@ -1,4 +1,4 @@
-def build_example_scene(player_texture, e2_texture) -> list[dict]:
+def build_example_scene() -> list[dict]:
     """
     Минимальный scene config: чистые данные (prefab-словарики),
     которые Scene потом превратит в ECS-сущности.
@@ -13,7 +13,7 @@ def build_example_scene(player_texture, e2_texture) -> list[dict]:
                 "scale_y": 1.0,
             },
             "renderable": {"z_index": 0},
-            "sprite": {"texture_path": player_texture},
+            "sprite": {"texture_path": "assets/textures/test.png"},
         },
         {
             "transform": {
@@ -24,6 +24,6 @@ def build_example_scene(player_texture, e2_texture) -> list[dict]:
                 "scale_y": 1.0,
             },
             "renderable": {"z_index": 1},
-            "sprite": {"texture_path": e2_texture},
+            "sprite": {"texture_path": "assets/textures/test2.png"},
         },
     ]

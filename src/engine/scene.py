@@ -45,7 +45,7 @@ class Scene:
             tex_path = spr_data.get("texture_path")
             if tex_path is None:
                 raise ValueError("Prefab sprite.texture_path is required")
-            self.registry.add(eid, Sprite(texture_path=tex_path))
+            self.registry.add(eid, Sprite(texture_path=str(tex_path)))
 
         return eid
 
