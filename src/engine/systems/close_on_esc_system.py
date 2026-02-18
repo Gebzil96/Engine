@@ -1,4 +1,5 @@
 import logging
+
 import glfw
 
 from .types import FrameContext

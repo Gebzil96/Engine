@@ -1,7 +1,7 @@
-from .types import UpdateSystem, RenderSystem
-from .input_system import input_system
 from .close_on_esc_system import close_on_esc_system
+from .input_system import input_system
 from .render_system import render_system
+from .types import RenderSystem, UpdateSystem
 
 
 def make_systems(

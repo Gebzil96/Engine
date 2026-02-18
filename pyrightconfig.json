@@ -1,0 +1,9 @@
+{
+  "include": ["src"],
+  "exclude": [".venv", "venv", "__pycache__", "logs"],
+  "typeCheckingMode": "basic",
+  "reportAttributeAccessIssue": "none",
+  "reportArgumentType": "none",
+  "reportMissingImports": "none",
+  "pythonVersion": "3.12"
+}

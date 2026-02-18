@@ -1,9 +1,8 @@
 import math
+
 import glfw
 
 from src.engine.ecs.components.transform import Transform
-
-from .types import FrameContext
 
 
 def input_system(

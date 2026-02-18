@@ -3,9 +3,18 @@ import math
 
 def ortho(left, right, bottom, top, near, far):
     return [
-        2.0 / (right - left), 0, 0, 0,
-        0, 2.0 / (top - bottom), 0, 0,
-        0, 0, -2.0 / (far - near), 0,
+        2.0 / (right - left),
+        0,
+        0,
+        0,
+        0,
+        2.0 / (top - bottom),
+        0,
+        0,
+        0,
+        0,
+        -2.0 / (far - near),
+        0,
         -(right + left) / (right - left),
         -(top + bottom) / (top - bottom),
         -(far + near) / (far - near),
@@ -15,10 +24,22 @@ def ortho(left, right, bottom, top, near, far):
 
 def mat4_identity():
     return [
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
     ]
 
 
@@ -48,10 +69,22 @@ def mat4_rotate_z(angle_radians: float):
     c = math.cos(angle_radians)
     s = math.sin(angle_radians)
     return [
-        c,   s,   0.0, 0.0,
-        -s,  c,   0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0,
+        c,
+        s,
+        0.0,
+        0.0,
+        -s,
+        c,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
     ]
 
 
@@ -61,10 +94,10 @@ def mat4_mul(a, b):
     for col in range(4):
         for row in range(4):
             out[col * 4 + row] = (
-                a[0 * 4 + row] * b[col * 4 + 0] +
-                a[1 * 4 + row] * b[col * 4 + 1] +
-                a[2 * 4 + row] * b[col * 4 + 2] +
-                a[3 * 4 + row] * b[col * 4 + 3]
+                a[0 * 4 + row] * b[col * 4 + 0]
+                + a[1 * 4 + row] * b[col * 4 + 1]
+                + a[2 * 4 + row] * b[col * 4 + 2]
+                + a[3 * 4 + row] * b[col * 4 + 3]
             )
     return out
 

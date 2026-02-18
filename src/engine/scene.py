@@ -8,12 +8,13 @@ class Prefab:
     components: tuple[object, ...] = ()
     role: str | None = None  # метка сущности внутри сцены (scene-aware spawn)
 
+
 class Scene:
     def __init__(self, registry):
         self.registry = registry
         self.entities: list[int] = []
         self.role_entities: dict[str, int] = {}
-    
+
     def clear(self) -> None:
         # Удаляем сущности сцены из ECS, чтобы компоненты не залипали
         for eid in self.entities:
@@ -42,6 +43,6 @@ class Scene:
         for prefab in prefabs:
             spawned.append(self.spawn_prefab(prefab))
         return spawned
-    
+
     def get_entity_by_role(self, role: str) -> int | None:
         return self.role_entities.get(role)

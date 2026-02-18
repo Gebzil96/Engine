@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from pathlib import Path
+
 import moderngl
 
 try:
@@ -24,9 +26,7 @@ class TextureManager:
             return self._textures[path]
 
         if Image is None:
-            raise ModuleNotFoundError(
-                "Pillow не установлен. Установи: pip install pillow"
-            )
+            raise ModuleNotFoundError("Pillow не установлен. Установи: pip install pillow")
 
         img = Image.open(path).convert("RGBA")
         img = img.transpose(Image.FLIP_TOP_BOTTOM)

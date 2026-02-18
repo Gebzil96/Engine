@@ -1,12 +1,10 @@
 from array import array
 
 from src.engine.ecs.components.renderable import Renderable
-from src.engine.ecs.components.transform import Transform
 from src.engine.ecs.components.sprite import Sprite
-from src.engine.resources.texture_manager import TextureManager
+from src.engine.ecs.components.transform import Transform
 from src.engine.render_math import build_model, build_view_proj
-
-from .types import FrameContext
+from src.engine.resources.texture_manager import TextureManager
 
 
 def render_system(
