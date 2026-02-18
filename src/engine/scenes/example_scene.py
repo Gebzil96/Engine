@@ -5,6 +5,8 @@ from src.engine.ecs.components.sprite import Sprite
 from src.engine.ecs.components.transform import Transform
 from src.engine.scene import Prefab
 
+import math
+
 
 def build_example_scene() -> list[Prefab]:
     """
@@ -26,3 +28,29 @@ def build_example_scene() -> list[Prefab]:
             )
         ),
     ]
+
+def update_example_scene(world, frame_ctx: dict) -> None:
+    """
+    Демонстрация SceneDefinition.update():
+    двигаем вторую сущность (e2_entity) по X туда-сюда, чтобы было видно, что lifecycle работает.
+    """
+    eid = getattr(world, "e2_entity", None)
+    if eid is None:
+        return
+
+    dt = float(frame_ctx.get("dt", 0.0))
+
+    # Время храним прямо в world (без новых компонентов и без новых систем)
+    t = float(getattr(world, "_example_scene_t", 0.0)) + dt
+    setattr(world, "_example_scene_t", t)
+
+    # Амплитуда/скорость — 🔧 МОЖНО МЕНЯТЬ
+    base_x = 300.0
+    amplitude = 120.0
+    speed = 2.0  # rad/sec
+
+    # Берём Transform и двигаем
+    from src.engine.ecs.components.transform import Transform
+
+    tr = world.registry.get(eid, Transform)
+    tr.pos_x = base_x + math.sin(t * speed) * amplitude
