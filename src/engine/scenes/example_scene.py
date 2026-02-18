@@ -14,6 +14,7 @@ def build_example_scene() -> list[Prefab]:
     """
     return [
         Prefab(
+            role="player",
             components=(
                 Transform(pos_x=0.0, pos_y=0.0, rot=0.0, scale_x=1.0, scale_y=1.0),
                 Renderable(z_index=0),
@@ -21,6 +22,7 @@ def build_example_scene() -> list[Prefab]:
             )
         ),
         Prefab(
+            role="mover",
             components=(
                 Transform(pos_x=300.0, pos_y=0.0, rot=0.0, scale_x=1.0, scale_y=1.0),
                 Renderable(z_index=1),
@@ -34,7 +36,7 @@ def update_example_scene(world, frame_ctx: dict) -> None:
     Демонстрация SceneDefinition.update():
     двигаем вторую сущность (e2_entity) по X туда-сюда, чтобы было видно, что lifecycle работает.
     """
-    eid = getattr(world, "e2_entity", None)
+    eid = world.scene.get_entity_by_role("mover")
     if eid is None:
         return
 

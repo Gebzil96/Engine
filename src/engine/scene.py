@@ -6,12 +6,13 @@ from dataclasses import dataclass
 @dataclass(slots=True)
 class Prefab:
     components: tuple[object, ...] = ()
-
+    role: str | None = None  # метка сущности внутри сцены (scene-aware spawn)
 
 class Scene:
     def __init__(self, registry):
         self.registry = registry
         self.entities: list[int] = []
+        self.role_entities: dict[str, int] = {}
 
     def spawn_prefab(self, prefab: Prefab) -> int:
         """Создаёт entity из Prefab (набор компонентов)."""
@@ -21,6 +22,9 @@ class Scene:
         for component in prefab.components:
             self.registry.add(eid, component)
 
+        if prefab.role is not None:
+            self.role_entities[prefab.role] = eid
+
         return eid
 
     def spawn_prefabs(self, prefabs: list[Prefab]) -> list[int]:
@@ -28,3 +32,6 @@ class Scene:
         for prefab in prefabs:
             spawned.append(self.spawn_prefab(prefab))
         return spawned
+    
+    def get_entity_by_role(self, role: str) -> int | None:
+        return self.role_entities.get(role)

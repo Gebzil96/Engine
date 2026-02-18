@@ -52,7 +52,6 @@ class World:
 
         # Сущности спавним позже в main(), когда текстуры уже загружены
         self.player_entity: int | None = None
-        self.e2_entity: int | None = None
 
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
@@ -196,9 +195,9 @@ def main():
         world.scene_def = scene_def
         prefabs = scene_def.build()
         spawned = world.scene.spawn_prefabs(prefabs)
-
-        world.player_entity = spawned[0] if len(spawned) > 0 else None
-        world.e2_entity = spawned[1] if len(spawned) > 1 else None
+        world.player_entity = world.scene.get_entity_by_role("player")
+        if world.player_entity is None:
+            world.player_entity = spawned[0] if len(spawned) > 0 else None
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]
