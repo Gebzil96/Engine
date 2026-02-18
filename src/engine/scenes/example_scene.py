@@ -34,7 +34,7 @@ def build_example_scene() -> list[Prefab]:
 def update_example_scene(world, frame_ctx: dict) -> None:
     """
     Демонстрация SceneDefinition.update():
-    двигаем вторую сущность (e2_entity) по X туда-сюда, чтобы было видно, что lifecycle работает.
+    двигаем сущность с ролью "mover" по X туда-сюда, чтобы было видно, что lifecycle работает.
     """
     eid = world.scene.get_entity_by_role("mover")
     if eid is None:

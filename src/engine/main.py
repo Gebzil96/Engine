@@ -194,10 +194,11 @@ def main():
         scene_def = get_scene_definition(SCENE_ID)
         world.scene_def = scene_def
         prefabs = scene_def.build()
-        spawned = world.scene.spawn_prefabs(prefabs)
+        world.scene.spawn_prefabs(prefabs)
+
         world.player_entity = world.scene.get_entity_by_role("player")
         if world.player_entity is None:
-            world.player_entity = spawned[0] if len(spawned) > 0 else None
+            raise RuntimeError("Scene must define a prefab with role='player'")
 
         prog = ctx.program(vertex_shader=vert_src, fragment_shader=frag_src)
         u_view_proj = prog["u_view_proj"]
