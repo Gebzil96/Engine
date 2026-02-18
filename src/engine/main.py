@@ -15,7 +15,7 @@ from src.engine.systems.types import FrameContext
 from src.engine.systems.make_systems import make_systems
 from src.engine.resources.texture_manager import TextureManager
 from src.engine.scene import Scene
-from src.engine.scenes.loader import get_scene_builder
+from src.engine.scenes.loader import get_scene_definition
 
 # --- ECS (Entity + Component Registry) ---
 try:
@@ -48,6 +48,7 @@ class World:
 
         # --- Scene ---
         self.scene = Scene(self.registry)
+        self.scene_def = None
 
         # Сущности спавним позже в main(), когда текстуры уже загружены
         self.player_entity: int | None = None
@@ -191,8 +192,9 @@ def main():
         # 🔧 МОЖНО МЕНЯТЬ
         SCENE_ID = "example_scene"
 
-        scene_builder = get_scene_builder(SCENE_ID)
-        prefabs = scene_builder()
+        scene_def = get_scene_definition(SCENE_ID)
+        world.scene_def = scene_def
+        prefabs = scene_def.build()
         spawned = world.scene.spawn_prefabs(prefabs)
 
         world.player_entity = spawned[0] if len(spawned) > 0 else None
@@ -277,6 +279,10 @@ def main():
                 "texture_manager": texture_manager,
             }
 
+            # Scene lifecycle: update (если задан)
+            if world.scene_def is not None and world.scene_def.update is not None:
+                world.scene_def.update(world, frame_ctx)
+
             for sys_update in update_systems:
                 sys_update(world, frame_ctx)
 
@@ -294,7 +300,7 @@ def main():
             if was_minimized:
                 logging.info("Window restored -> rendering resumed (framebuffer %s x %s)", fb_w, fb_h)
                 was_minimized = False
-            
+
             frame_ctx["fb_w"] = fb_w
             frame_ctx["fb_h"] = fb_h
             frame_ctx["vao"] = vao
@@ -345,6 +351,12 @@ def main():
         except Exception:
             # На случай, если упали очень рано и переменные не создались
             pass
+
+        try:
+            if "world" in locals() and world.scene_def is not None and world.scene_def.cleanup is not None:
+                world.scene_def.cleanup(world)
+        except Exception:
+            logging.exception("Scene cleanup failed")
 
         logging.info("Engine shutdown")
         glfw.terminate()
