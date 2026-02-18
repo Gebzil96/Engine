@@ -40,13 +40,13 @@ class Registry:
         bucket.pop(entity, None)
         if not bucket:
             self._components.pop(component_type, None)
-    
+
     def get_all(self, component_type: Type[T]) -> Dict[EntityId, T]:
         bucket = self._components.get(component_type)
         if bucket is None:
             return {}
         return bucket
-    
+
     def query(self, *component_types: Type[Any]) -> list[EntityId]:
         """
         Вернёт список EntityId, у которых есть ВСЕ компоненты из component_types.
@@ -74,40 +74,6 @@ class Registry:
 
         # Стабильный порядок (на будущее удобнее)
         return sorted(result)
-    
-    
-    def query(self, *component_types: Type[Any]) -> list[EntityId]:
-        """
-        Вернуть список entity_id, у которых есть ВСЕ указанные компоненты.
-        Пример: registry.query(Transform, Renderable)
-        """
-        if not component_types:
-            return []
-
-        # Берём бакеты компонентов
-        buckets: list[Dict[EntityId, Any]] = []
-        for ct in component_types:
-            bucket = self._components.get(ct)
-            if not bucket:
-                return []
-            buckets.append(bucket)
-
-        # Идём по самому маленькому бакету (быстрее)
-        buckets.sort(key=len)
-        base = buckets[0]
-        others = buckets[1:]
-
-        result: list[EntityId] = []
-        for eid in base.keys():
-            ok = True
-            for b in others:
-                if eid not in b:
-                    ok = False
-                    break
-            if ok:
-                result.append(eid)
-
-        return result
 
     def destroy_entity(self, entity: EntityId) -> None:
         """
@@ -118,4 +84,4 @@ class Registry:
         for ctype, bucket in list(self._components.items()):
             bucket.pop(entity, None)
             if not bucket:
-                self._components.pop(ctype, None)    
+                self._components.pop(ctype, None)

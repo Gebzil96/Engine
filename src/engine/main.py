@@ -1,9 +1,10 @@
+import logging
+import time
+from array import array
+from pathlib import Path
+
 import glfw
 import moderngl
-import time
-from pathlib import Path
-from array import array
-import logging
 
 try:
     from PIL import Image
@@ -11,31 +12,29 @@ except ModuleNotFoundError:
     Image = None
 
 import sys
-from src.engine.systems.types import FrameContext
-from src.engine.systems.make_systems import make_systems
+
 from src.engine.resources.texture_manager import TextureManager
 from src.engine.scene import Scene
 from src.engine.scenes.loader import get_scene_definition
+from src.engine.systems.make_systems import make_systems
+from src.engine.systems.types import FrameContext
 
 # --- ECS (Entity + Component Registry) ---
 try:
     # Обычный запуск через run_engine.pyw: from src.engine.main import main
     from src.engine.ecs.registry import Registry
-    from src.engine.ecs.components.transform import Transform
-    from src.engine.ecs.components.renderable import Renderable
 except ModuleNotFoundError:
     # На всякий случай: если main.py запустили напрямую, добавим корень проекта в sys.path
     project_root = Path(__file__).resolve().parents[2]
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     from src.engine.ecs.registry import Registry
-    from src.engine.ecs.components.transform import Transform
-    from src.engine.ecs.components.renderable import Renderable
 
 EMERGENCY_LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "run.log"
 EMERGENCY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # Matrix helpers moved to src/engine/render_math.py (no behavior change)
+
 
 class World:
     def __init__(self):
@@ -52,6 +51,7 @@ class World:
 
         # Сущности спавним позже в main(), когда текстуры уже загружены
         self.player_entity: int | None = None
+
 
 def setup_logging() -> Path:
     # Путь от файла main.py: src/engine/main.py -> корень проекта = parents[2]
@@ -79,11 +79,10 @@ def setup_logging() -> Path:
 
     return log_path
 
+
 def load_texture_rgba(ctx, path: Path):
     if Image is None:
-        raise ModuleNotFoundError(
-            "Pillow не установлен. Установи: pip install pillow"
-        )
+        raise ModuleNotFoundError("Pillow не установлен. Установи: pip install pillow")
 
     img = Image.open(path).convert("RGBA")
     # OpenGL ожидает начало координат снизу-слева, PNG обычно сверху-слева
@@ -96,7 +95,7 @@ def load_texture_rgba(ctx, path: Path):
     return tex
 
 
-def main():    
+def main():
     try:
         setup_logging()
         engine_start_time = time.perf_counter()
@@ -207,7 +206,6 @@ def main():
         u_tex = prog["u_tex"]
         u_tex.value = 0  # texture unit 0
 
-
         # 🔧 МОЖНО МЕНЯТЬ
         QUAD_MOVE_SPEED_PX_PER_SEC = 300.0
 
@@ -221,25 +219,45 @@ def main():
         # 🔧 МОЖНО МЕНЯТЬ
         CAM_MOVE_SPEED_PX_PER_SEC = 400.0
 
-        quad_vertices = array("f", [
-            # x, y,   u, v
-            -50.0, -50.0, 0.0, 0.0,
-            50.0, -50.0, 1.0, 0.0,
-            50.0,  50.0, 1.0, 1.0,
-            -50.0,  50.0, 0.0, 1.0,
-        ])
+        quad_vertices = array(
+            "f",
+            [
+                # x, y,   u, v
+                -50.0,
+                -50.0,
+                0.0,
+                0.0,
+                50.0,
+                -50.0,
+                1.0,
+                0.0,
+                50.0,
+                50.0,
+                1.0,
+                1.0,
+                -50.0,
+                50.0,
+                0.0,
+                1.0,
+            ],
+        )
 
-        quad_indices = array('I', [
-            0, 1, 2,
-            2, 3, 0,
-        ])
+        quad_indices = array(
+            "I",
+            [
+                0,
+                1,
+                2,
+                2,
+                3,
+                0,
+            ],
+        )
 
         vbo = ctx.buffer(quad_vertices.tobytes())
         ibo = ctx.buffer(quad_indices.tobytes())
 
-        vao = ctx.vertex_array(
-            prog, [(vbo, "2f 2f", "in_pos", "in_uv")], index_buffer=ibo
-        )
+        vao = ctx.vertex_array(prog, [(vbo, "2f 2f", "in_pos", "in_uv")], index_buffer=ibo)
 
         # 🔧 МОЖНО МЕНЯТЬ
         TARGET_FPS = 120
@@ -299,7 +317,11 @@ def main():
                 glfw.swap_buffers(window)
                 continue
             if was_minimized:
-                logging.info("Window restored -> rendering resumed (framebuffer %s x %s)", fb_w, fb_h)
+                logging.info(
+                    "Window restored -> rendering resumed (framebuffer %s x %s)",
+                    fb_w,
+                    fb_h,
+                )
                 was_minimized = False
 
             frame_ctx["fb_w"] = fb_w
@@ -354,7 +376,11 @@ def main():
             pass
 
         try:
-            if "world" in locals() and world.scene_def is not None and world.scene_def.cleanup is not None:
+            if (
+                "world" in locals()
+                and world.scene_def is not None
+                and world.scene_def.cleanup is not None
+            ):
                 world.scene_def.cleanup(world)
         except Exception:
             logging.exception("Scene cleanup failed")
