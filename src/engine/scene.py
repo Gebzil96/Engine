@@ -1,87 +1,82 @@
-from src.engine.ecs.components.transform import Transform
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, Union
+
 from src.engine.ecs.components.renderable import Renderable
 from src.engine.ecs.components.sprite import Sprite
+from src.engine.ecs.components.transform import Transform
+
+
+@dataclass(slots=True)
+class Prefab:
+    transform: Optional[Transform] = None
+    renderable: Optional[Renderable] = None
+    sprite: Optional[Sprite] = None
+
 
 class Scene:
     def __init__(self, registry):
         self.registry = registry
         self.entities: list[int] = []
-    
-    def spawn_prefab(self, data: dict) -> int:
-        """
-        Создаёт entity из "данных" (словаря).
-        Сейчас поддерживаем: Transform, Renderable, Sprite.
-        """
-        eid = self.registry.create_entity()
-        self.entities.append(eid)
 
-        # Transform
+    def _prefab_from_dict(self, data: dict) -> Prefab:
+        """
+        Временная совместимость со старым форматом dict-prefab.
+        Наружу (в сценах) больше не используем магические строки.
+        """
+        prefab = Prefab()
+
         tr_data = data.get("transform")
         if tr_data is not None:
-            self.registry.add(
-                eid,
-                Transform(
-                    pos_x=float(tr_data.get("pos_x", 0.0)),
-                    pos_y=float(tr_data.get("pos_y", 0.0)),
-                    rot=float(tr_data.get("rot", 0.0)),
-                    scale_x=float(tr_data.get("scale_x", 1.0)),
-                    scale_y=float(tr_data.get("scale_y", 1.0)),
-                ),
+            prefab.transform = Transform(
+                pos_x=float(tr_data.get("pos_x", 0.0)),
+                pos_y=float(tr_data.get("pos_y", 0.0)),
+                rot=float(tr_data.get("rot", 0.0)),
+                scale_x=float(tr_data.get("scale_x", 1.0)),
+                scale_y=float(tr_data.get("scale_y", 1.0)),
             )
 
-        # Renderable
         rend_data = data.get("renderable")
         if rend_data is not None:
-            self.registry.add(
-                eid,
-                Renderable(
-                    z_index=int(rend_data.get("z_index", 0)),
-                ),
+            prefab.renderable = Renderable(
+                z_index=int(rend_data.get("z_index", 0)),
             )
 
-        # Sprite
         spr_data = data.get("sprite")
         if spr_data is not None:
             tex_path = spr_data.get("texture_path")
             if tex_path is None:
                 raise ValueError("Prefab sprite.texture_path is required")
-            self.registry.add(eid, Sprite(texture_path=str(tex_path)))
+            prefab.sprite = Sprite(texture_path=Path(str(tex_path)))
+
+        return prefab
+
+    def spawn_prefab(self, prefab: Union[Prefab, dict]) -> int:
+        """
+        Создаёт entity из Prefab.
+        (dict поддерживается временно, чтобы ничего не сломать резко)
+        """
+        if isinstance(prefab, dict):
+            prefab = self._prefab_from_dict(prefab)
+
+        eid = self.registry.create_entity()
+        self.entities.append(eid)
+
+        if prefab.transform is not None:
+            self.registry.add(eid, prefab.transform)
+
+        if prefab.renderable is not None:
+            self.registry.add(eid, prefab.renderable)
+
+        if prefab.sprite is not None:
+            self.registry.add(eid, prefab.sprite)
 
         return eid
 
-    def spawn_prefabs(self, prefabs: list[dict]) -> list[int]:
+    def spawn_prefabs(self, prefabs: list[Union[Prefab, dict]]) -> list[int]:
         spawned: list[int] = []
-        for data in prefabs:
-            spawned.append(self.spawn_prefab(data))
-        return spawned  
-
-    def spawn_example(self, player_texture_path, e2_texture_path):
-        player = self.spawn_prefab(
-            {
-                "transform": {
-                    "pos_x": 0.0,
-                    "pos_y": 0.0,
-                    "rot": 0.0,
-                    "scale_x": 1.0,
-                    "scale_y": 1.0,
-                },
-                "renderable": {"z_index": 0},
-                "sprite": {"texture_path": player_texture_path},
-            }
-        )
-
-        e2 = self.spawn_prefab(
-            {
-                "transform": {
-                    "pos_x": 300.0,
-                    "pos_y": 0.0,
-                    "rot": 0.0,
-                    "scale_x": 1.0,
-                    "scale_y": 1.0,
-                },
-                "renderable": {"z_index": 1},
-                "sprite": {"texture_path": e2_texture_path},
-            }
-        )
-
-        return player, e2
+        for prefab in prefabs:
+            spawned.append(self.spawn_prefab(prefab))
+        return spawned
