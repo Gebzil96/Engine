@@ -13,6 +13,10 @@ class Scene:
         self.registry = registry
         self.entities: list[int] = []
         self.role_entities: dict[str, int] = {}
+    
+    def clear(self) -> None:
+        self.entities.clear()
+        self.role_entities.clear()
 
     def spawn_prefab(self, prefab: Prefab) -> int:
         """Создаёт entity из Prefab (набор компонентов)."""

@@ -194,6 +194,7 @@ def main():
         scene_def = get_scene_definition(SCENE_ID)
         world.scene_def = scene_def
         prefabs = scene_def.build()
+        world.scene.clear()
         world.scene.spawn_prefabs(prefabs)
 
         world.player_entity = world.scene.get_entity_by_role("player")
