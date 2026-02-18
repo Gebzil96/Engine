@@ -23,6 +23,8 @@ class Scene:
             self.registry.add(eid, component)
 
         if prefab.role is not None:
+            if prefab.role in self.role_entities:
+                raise RuntimeError(f"Duplicate prefab role: {prefab.role!r}")
             self.role_entities[prefab.role] = eid
 
         return eid
