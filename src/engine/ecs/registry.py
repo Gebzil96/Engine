@@ -108,4 +108,14 @@ class Registry:
                 result.append(eid)
 
         return result
-    
+
+    def destroy_entity(self, entity: EntityId) -> None:
+        """
+        Полностью удалить entity из Registry:
+        убрать его из ВСЕХ компонентных бакетов.
+        """
+        # Идём по копии, чтобы можно было безопасно удалять пустые бакеты
+        for ctype, bucket in list(self._components.items()):
+            bucket.pop(entity, None)
+            if not bucket:
+                self._components.pop(ctype, None)    

@@ -15,6 +15,10 @@ class Scene:
         self.role_entities: dict[str, int] = {}
     
     def clear(self) -> None:
+        # Удаляем сущности сцены из ECS, чтобы компоненты не залипали
+        for eid in self.entities:
+            self.registry.destroy_entity(eid)
+
         self.entities.clear()
         self.role_entities.clear()
 
