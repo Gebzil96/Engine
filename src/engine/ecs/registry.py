@@ -12,9 +12,12 @@ class Registry:
         self._entities = EntityFactory()
         # components[type(component)][entity_id] = component_instance
         self._components: Dict[Type[Any], Dict[EntityId, Any]] = {}
+        self._alive: set[EntityId] = set()
 
     def create_entity(self) -> EntityId:
-        return self._entities.create()
+        entity = self._entities.create()
+        self._alive.add(entity)
+        return entity
 
     def add(self, entity: EntityId, component: Any) -> None:
         ctype = type(component)
@@ -73,9 +76,14 @@ class Registry:
                 return []
 
         # Стабильный порядок (на будущее удобнее)
-        return sorted(result)
+        alive_only = [e for e in result if e in self._alive]
+        return sorted(alive_only)
+
+    def is_alive(self, entity: EntityId) -> bool:
+        return entity in self._alive
 
     def destroy_entity(self, entity: EntityId) -> None:
+        self._alive.discard(entity)
         """
         Полностью удалить entity из Registry:
         убрать его из ВСЕХ компонентных бакетов.
