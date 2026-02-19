@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog
 
 from src.engine.launcher.services.engine_runner import EngineRunner
 from src.engine.launcher.services.project_service import ProjectService
@@ -22,20 +22,8 @@ class LauncherWindow:
         self._initial_project = initial_project.strip()
 
         self._root = tk.Tk()
-        self._root.title("Менеджер проектов")
+        self._root.title("Engine Launcher")
         self._root.geometry("640x420")
-
-        # --- Theme (dark) ---
-        bg = "#1e1e1e"
-        fg = "#e6e6e6"
-        panel = "#252526"
-
-        self._root.configure(bg=bg)
-
-        # базовые настройки для виджетов tk
-        self._tk_bg = bg
-        self._tk_fg = fg
-        self._tk_panel = panel
 
         self._selected_path = tk.StringVar(value=self._initial_project)
 
@@ -49,84 +37,35 @@ class LauncherWindow:
         self._root.mainloop()
 
     # ---------------- UI ----------------
-
     def _build_ui(self) -> None:
-        top = tk.Frame(self._root, bg=self._tk_bg)
+        top = tk.Frame(self._root)
         top.pack(fill="x", padx=12, pady=12)
 
-        tk.Label(
-            top,
-            text="Проекты",
-            font=("Segoe UI", 14, "bold"),
-            bg=self._tk_bg,
-            fg=self._tk_fg,
-        ).pack(anchor="w")
+        tk.Label(top, text="Projects", font=("Segoe UI", 14, "bold")).pack(anchor="w")
 
-        mid = tk.Frame(self._root, bg=self._tk_bg)
+        mid = tk.Frame(self._root)
         mid.pack(fill="both", expand=True, padx=12)
 
-        left = tk.Frame(mid, bg=self._tk_bg)
+        left = tk.Frame(mid)
         left.pack(side="left", fill="both", expand=True)
 
-        tk.Label(left, text="Недавние проекты:", bg=self._tk_bg, fg=self._tk_fg).pack(anchor="w")
-
-        self._list = tk.Listbox(
-            left,
-            height=14,
-            bg=self._tk_panel,
-            fg=self._tk_fg,
-            selectbackground="#3a3d41",
-            selectforeground=self._tk_fg,
-            highlightthickness=0,
-        )
+        tk.Label(left, text="Recent projects:").pack(anchor="w")
+        self._list = tk.Listbox(left, height=14)
         self._list.pack(fill="both", expand=True, pady=(6, 0))
         self._list.bind("<<ListboxSelect>>", self._on_select_recent)
 
-        right = tk.Frame(mid, bg=self._tk_bg)
+        right = tk.Frame(mid)
         right.pack(side="left", fill="y", padx=(12, 0))
 
-        tk.Button(
-            right,
-            text="Открыть…",
-            width=16,
-            command=self._open_project,
-            bg=self._tk_panel,
-            fg=self._tk_fg,
-            activebackground=self._tk_panel,
-            activeforeground=self._tk_fg,
-        ).pack(pady=(0, 8))
-        tk.Button(
-            right,
-            text="Создать…",
-            width=16,
-            state="disabled",
-            bg=self._tk_panel,
-            fg=self._tk_fg,
-            activebackground=self._tk_panel,
-            activeforeground=self._tk_fg,
-        ).pack(pady=(0, 8))
-        tk.Button(
-            right,
-            text="Запуск",
-            width=16,
-            command=self._launch,
-            bg=self._tk_panel,
-            fg=self._tk_fg,
-            activebackground=self._tk_panel,
-            activeforeground=self._tk_fg,
-        ).pack(pady=(0, 8))
+        tk.Button(right, text="Open…", width=16, command=self._open_project).pack(pady=(0, 8))
+        tk.Button(right, text="Create…", width=16, command=self._create_project).pack(pady=(0, 8))
+        tk.Button(right, text="Launch", width=16, command=self._launch).pack(pady=(0, 8))
 
-        bottom = tk.Frame(self._root, bg=self._tk_bg)
+        bottom = tk.Frame(self._root)
         bottom.pack(fill="x", padx=12, pady=(6, 12))
 
-        tk.Label(bottom, text="Выбранный проект:", bg=self._tk_bg, fg=self._tk_fg).pack(anchor="w")
-        tk.Entry(
-            bottom,
-            textvariable=self._selected_path,
-            bg=self._tk_panel,
-            fg=self._tk_fg,
-            insertbackground=self._tk_fg,
-        ).pack(fill="x", pady=(4, 0))
+        tk.Label(bottom, text="Selected:").pack(anchor="w")
+        tk.Entry(bottom, textvariable=self._selected_path).pack(fill="x", pady=(4, 0))
 
     def _reload_recent(self) -> None:
         self._list.delete(0, tk.END)
@@ -138,7 +77,6 @@ class LauncherWindow:
         self._selected_path.set(path)
 
     # ---------------- Actions ----------------
-
     def _on_select_recent(self, _evt: object) -> None:
         sel = self._list.curselection()
         if not sel:
@@ -147,24 +85,50 @@ class LauncherWindow:
         self._select_path(path)
 
     def _open_project(self) -> None:
-        path = filedialog.askdirectory(title="Выберите папку проекта")
+        path = filedialog.askdirectory(title="Select project folder")
         if not path:
             return
 
         ok, err = self._project_service.validate_project_dir(path)
         if not ok:
-            messagebox.showerror("Некорректный проект", err)
+            messagebox.showerror("Invalid project", err)
             return
 
         self._recent_store.push_front(path)
         self._reload_recent()
         self._select_path(path)
 
+    def _create_project(self) -> None:
+        parent = filedialog.askdirectory(title="Select folder where to create project")
+        if not parent:
+            return
+
+        name = simpledialog.askstring("Create project", "Project name:", parent=self._root)
+        if name is None:
+            return  # Cancel
+        name = name.strip()
+        if not name:
+            messagebox.showerror("Create project", "Project name is empty")
+            return
+
+        result = self._project_service.create_project(parent, name)
+        if not result.ok:
+            messagebox.showerror("Create project", result.error)
+            return
+
+        # автодобавление в recent + выбор
+        self._recent_store.push_front(result.project_path)
+        self._reload_recent()
+        self._select_path(result.project_path)
+
+        messagebox.showinfo("Create project", "Project created successfully")
+
     def _launch(self) -> None:
         path = self._selected_path.get().strip()
+
         ok, err = self._project_service.validate_project_dir(path)
         if not ok:
-            messagebox.showerror("Некорректный проект", err)
+            messagebox.showerror("Invalid project", err)
             return
 
         self._recent_store.push_front(path)
