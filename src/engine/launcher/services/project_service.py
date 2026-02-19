@@ -46,13 +46,11 @@ class ProjectService:
         name = (project_name or "").strip()
 
         if not name:
+            return CreateProjectResult(ok=False, error="Название проекта пустое")
+        if any(ch in name for ch in r'\/:*?"<>|'):
             return CreateProjectResult(
                 ok=False,
                 error="Название содержит запрещённые символы Windows",
-            )
-        if any(ch in name for ch in r'\/:*?"<>|'):
-            return CreateProjectResult(
-                ok=False, error="Название содержит запрещённые символы Windows"
             )
 
         if not parent.exists():
