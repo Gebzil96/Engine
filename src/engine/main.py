@@ -71,7 +71,7 @@ def setup_logging() -> Path:
         ],
     )
 
-    logging.info("Engine start")
+    logging.info("Запуск движка")
     logging.info("Python version: %s", sys.version)
     logging.info("glfw version: %s", getattr(glfw, "__version__", "unknown"))
     logging.info("moderngl version: %s", getattr(moderngl, "__version__", "unknown"))
@@ -109,7 +109,7 @@ def main():
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
         # 3. Создаём окно
-        window = glfw.create_window(1280, 720, "Engine", None, None)
+        window = glfw.create_window(1280, 720, "Движок", None, None)
         logging.info("Requested window size: %s x %s", 1280, 720)
         if not window:
             glfw.terminate()
